@@ -1,3 +1,6 @@
 [submodule "stackage"]
 	path = stackage
 	url = git://github.com/fpco/stackage.git
+[submodule "haskell-platform"]
+	path = haskell-platform
+	url = git://github.com/haskell/haskell-platform.git
