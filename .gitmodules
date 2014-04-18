@@ -1,0 +1,3 @@
+[submodule "stackage"]
+	path = stackage
+	url = git://github.com/fpco/stackage.git
