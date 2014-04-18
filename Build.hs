@@ -10,7 +10,7 @@ import Development.Shake
 import System.Directory
 import System.FilePath.Posix
 
-version = "0.1.20040418"
+version = "7.6.3-3.0a-20040418"
 
 aquaVer = "3.0a"
 aquaDmg = "Aquamacs-Emacs-" ++ aquaVer ++ ".dmg"
@@ -74,7 +74,14 @@ main = shakeArgs shakeOptions $ do
         cmd "touch" [out]
 
     {-
+        Unpack and install Aquamacs
+
+        Unpack and install GHC binary distro
+
         Fix cpp reference in TryHaskell bundle
+                build clang-xcode5-wrapper
+                change /Applications/TryHaskell.app/Contents/Resources/ghc/lib/ghc-7.6.3/settings
+                    to use it instead of gcc
 
         Unpack cabal-install
 
@@ -82,4 +89,6 @@ main = shakeArgs shakeOptions $ do
             DEFAULT_PREFIX="/usr/local"
         for
             DEFAULT_PREFIX="/Applications/TryHaskell.app/Contents/Resources/ghc"
+
+        run bootstrap.sh --global
     -}
