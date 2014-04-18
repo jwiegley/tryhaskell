@@ -72,3 +72,14 @@ main = shakeArgs shakeOptions $ do
             ] :: Action ()
         cmd "hdiutil detach" ["/Volumes/Aquamacs Emacs"] :: Action ()
         cmd "touch" [out]
+
+    {-
+        Fix cpp reference in TryHaskell bundle
+
+        Unpack cabal-install
+
+        substitute
+            DEFAULT_PREFIX="/usr/local"
+        for
+            DEFAULT_PREFIX="/Applications/TryHaskell.app/Contents/Resources/ghc"
+    -}
