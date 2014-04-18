@@ -1,0 +1,45 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>11.2. When your program &#8220;does the wrong thing&#8221;</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="wrong.html" title="Chapter 11. What to do when something goes wrong"><link rel="prev" href="wrong.html" title="Chapter 11. What to do when something goes wrong"><link rel="next" href="utils.html" title="Chapter 12. Other Haskell utility programs"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">11.2. When your program &#8220;does the wrong thing&#8221;</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="wrong.html">Prev</a> </td><th width="60%" align="center">Chapter 11. What to do when something goes wrong</th><td width="20%" align="right"> <a accesskey="n" href="utils.html">Next</a></td></tr></table><hr></div><div class="sect1" title="11.2. When your program &#8220;does the wrong thing&#8221;"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="wrong-compilee"></a>11.2. When your program &#8220;does the wrong thing&#8221;</h2></div></div></div><a class="indexterm" name="idp62400192"></a><p>(For advice about overly slow or memory-hungry Haskell
+    programs, please see <a class="xref" href="sooner-faster-quicker.html" title="Chapter 6. Advice on: sooner, faster, smaller, thriftier">Chapter 6, <i>Advice on: sooner, faster, smaller, thriftier</i></a>).</p><div class="variablelist"><dl><dt><span class="term">&#8220;Help! My program crashed!&#8221;</span></dt><dd><p>(e.g., a `segmentation fault' or `core dumped')
+          <a class="indexterm" name="idp62403664"></a></p><p>If your program has no foreign calls in it, and no
+          calls to known-unsafe functions (such as
+          <code class="literal">unsafePerformIO</code>) then a crash is always a
+          BUG in the GHC system, except in one case: If your program
+          is made of several modules, each module must have been
+          compiled after any modules on which it depends (unless you
+          use <code class="filename">.hi-boot</code> files, in which case these
+          <span class="emphasis"><em>must</em></span> be correct with respect to the
+          module source).</p><p>For example, if an interface is lying about the type
+          of an imported value then GHC may well generate duff code
+          for the importing module.  <span class="emphasis"><em>This applies to pragmas
+          inside interfaces too!</em></span> If the pragma is lying
+          (e.g., about the &#8220;arity&#8221; of a value), then duff
+          code may result.  Furthermore, arities may change even if
+          types do not.</p><p>In short, if you compile a module and its interface
+          changes, then all the modules that import that interface
+          <span class="emphasis"><em>must</em></span> be re-compiled.</p><p>A useful option to alert you when interfaces change is
+          <code class="option">-hi-diffs</code><a class="indexterm" name="idp62409808"></a>.  It will run
+          <span class="command"><strong>diff</strong></span> on the changed interface file,
+          before and after, when applicable.</p><p>If you are using <span class="command"><strong>make</strong></span>, GHC can
+          automatically generate the dependencies required in order to
+          make sure that every module <span class="emphasis"><em>is</em></span>
+          up-to-date with respect to its imported interfaces.  Please
+          see <a class="xref" href="separate-compilation.html#makefile-dependencies" title="4.7.11. Dependency generation">Section 4.7.11, &#8220;Dependency generation&#8221;</a>.</p><p>If you are down to your
+          last-compile-before-a-bug-report, we would recommend that
+          you add a <code class="option">-dcore-lint</code> option (for extra
+          checking) to your compilation options.</p><p>So, before you report a bug because of a core dump,
+	  you should probably:</p><pre class="screen">
+% rm *.o        # scrub your object files
+% make my_prog  # re-make your program; use -hi-diffs to highlight changes;
+                # as mentioned above, use -dcore-lint to be more paranoid
+% ./my_prog ... # retry...
+</pre><p>Of course, if you have foreign calls in your program
+          then all bets are off, because you can trash the heap, the
+          stack, or whatever.</p></dd><dt><span class="term">&#8220;My program entered an `absent' argument.&#8221;</span></dt><dd><p>This is definitely caused by a bug in GHC. Please
+          report it (see <a class="xref" href="bug-reporting.html" title="1.3. Reporting bugs in GHC">Section 1.3, &#8220;Reporting bugs in GHC&#8221;</a>).</p></dd><dt><span class="term">&#8220;What's with this `arithmetic (or `floating')
+	exception' &#8221;?</span></dt><dd><p><code class="literal">Int</code>, <code class="literal">Float</code>, and
+          <code class="literal">Double</code> arithmetic is
+          <span class="emphasis"><em>unchecked</em></span>.  Overflows, underflows and
+          loss of precision are either silent or reported as an
+          exception by the operating system (depending on the
+          platform).  Divide-by-zero <span class="emphasis"><em>may</em></span> cause an
+          untrapped exception (please report it if it does).</p></dd></dl></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="wrong.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="wrong.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="utils.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 11. What to do when something goes wrong </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 12. Other Haskell utility programs</td></tr></table></div></body></html>

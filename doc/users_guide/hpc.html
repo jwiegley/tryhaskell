@@ -1,0 +1,254 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>5.7. Observing Code Coverage</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="profiling.html" title="Chapter 5. Profiling"><link rel="prev" href="prof-threaded.html" title="5.6. Profiling Parallel and Concurrent Programs"><link rel="next" href="ticky-ticky.html" title="5.8. Using &#8220;ticky-ticky&#8221; profiling (for implementors)"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">5.7. Observing Code Coverage</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="prof-threaded.html">Prev</a> </td><th width="60%" align="center">Chapter 5. Profiling</th><td width="20%" align="right"> <a accesskey="n" href="ticky-ticky.html">Next</a></td></tr></table><hr></div><div class="sect1" title="5.7. Observing Code Coverage"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="hpc"></a>5.7. Observing Code Coverage</h2></div></div></div><a class="indexterm" name="idp51389712"></a><a class="indexterm" name="idp51390464"></a><a class="indexterm" name="idp51391248"></a><p>
+      Code coverage tools allow a programmer to determine what parts
+      of their code have been actually executed, and which parts have
+      never actually been invoked.  GHC has an option for generating
+      instrumented code that records code coverage as part of the
+      Haskell Program Coverage (HPC) toolkit, which is included with
+      GHC. HPC tools can be used to render the generated code coverage
+      information into human understandable format.  </p><p>
+      Correctly instrumented code provides coverage information of two
+      kinds: source coverage and boolean-control coverage. Source
+      coverage is the extent to which every part of the program was
+      used, measured at three different levels: declarations (both
+      top-level and local), alternatives (among several equations or
+      case branches) and expressions (at every level).  Boolean
+      coverage is the extent to which each of the values True and
+      False is obtained in every syntactic boolean context (ie. guard,
+      condition, qualifier).  </p><p>
+      HPC displays both kinds of information in two primary ways:
+      textual reports with summary statistics (<code class="literal">hpc report</code>) and sources
+      with color mark-up (<code class="literal">hpc markup</code>).  For boolean coverage, there
+      are four possible outcomes for each guard, condition or
+      qualifier: both True and False values occur; only True; only
+      False; never evaluated. In hpc-markup output, highlighting with
+      a yellow background indicates a part of the program that was
+      never evaluated; a green background indicates an always-True
+      expression and a red background indicates an always-False one.
+    </p><div class="sect2" title="5.7.1. A small example: Reciprocation"><div class="titlepage"><div><div><h3 class="title"><a name="idp51396112"></a>5.7.1. A small example: Reciprocation</h3></div></div></div><p>
+     For an example we have a program, called <code class="filename">Recip.hs</code>, which computes exact decimal
+     representations of reciprocals, with recurring parts indicated in
+     brackets.
+    </p><pre class="programlisting">
+reciprocal :: Int -&gt; (String, Int)
+reciprocal n | n &gt; 1 = ('0' : '.' : digits, recur)
+             | otherwise = error
+	          "attempting to compute reciprocal of number &lt;= 1"
+  where
+  (digits, recur) = divide n 1 []
+divide :: Int -&gt; Int -&gt; [Int] -&gt; (String, Int)
+divide n c cs | c `elem` cs = ([], position c cs)
+              | r == 0      = (show q, 0)
+              | r /= 0      = (show q ++ digits, recur)
+  where
+  (q, r) = (c*10) `quotRem` n
+  (digits, recur) = divide n r (c:cs)
+
+position :: Int -&gt; [Int] -&gt; Int
+position n (x:xs) | n==x      = 1
+                  | otherwise = 1 + position n xs
+
+showRecip :: Int -&gt; String
+showRecip n =
+  "1/" ++ show n ++ " = " ++
+  if r==0 then d else take p d ++ "(" ++ drop p d ++ ")"
+  where
+  p = length d - r
+  (d, r) = reciprocal n
+
+main = do
+  number &lt;- readLn
+  putStrLn (showRecip number)
+  main
+</pre><p>HPC instrumentation is enabled with the -fhpc flag:
+    </p><pre class="screen">
+$ ghc -fhpc Recip.hs
+</pre><p>GHC creates a subdirectory <code class="filename">.hpc</code> in the
+    current directory, and puts HPC index (<code class="filename">.mix</code>)
+    files in there, one for each module compiled.  You don't need to
+    worry about these files: they contain information needed by the
+    <code class="literal">hpc</code> tool to generate the coverage data for
+    compiled modules after the program is run.</p><pre class="screen">
+$ ./Recip
+1/3
+= 0.(3)
+</pre><p>Running the program generates a file with the
+    <code class="literal">.tix</code> suffix, in this case
+    <code class="filename">Recip.tix</code>, which contains the coverage data
+    for this run of the program.  The program may be run multiple
+    times (e.g. with different test data), and the coverage data from
+    the separate runs is accumulated in the <code class="filename">.tix</code>
+    file.  To reset the coverage data and start again, just remove the
+    <code class="filename">.tix</code> file.
+    </p><p>Having run the program, we can generate a textual summary of
+    coverage:</p><pre class="screen">
+$ hpc report Recip
+ 80% expressions used (81/101)
+ 12% boolean coverage (1/8)
+      14% guards (1/7), 3 always True,
+                        1 always False,
+                        2 unevaluated
+       0% 'if' conditions (0/1), 1 always False
+     100% qualifiers (0/0)
+ 55% alternatives used (5/9)
+100% local declarations used (9/9)
+100% top-level declarations used (5/5)
+</pre><p>We can also generate a marked-up version of the source.</p><pre class="screen">
+$ hpc markup Recip
+writing Recip.hs.html
+</pre><p>
+		This generates one file per Haskell module, and 4 index files,
+		hpc_index.html, hpc_index_alt.html, hpc_index_exp.html,
+		hpc_index_fun.html.
+	</p></div><div class="sect2" title="5.7.2. Options for instrumenting code for coverage"><div class="titlepage"><div><div><h3 class="title"><a name="idp51409664"></a>5.7.2. Options for instrumenting code for coverage</h3></div></div></div><div class="variablelist"><dl><dt><span class="term"><code class="option">-fhpc</code></span></dt><dd><p>Enable code coverage for the current module or modules
+          being compiled.</p><p>Modules compiled with this option can be freely mixed
+          with modules compiled without it; indeed, most libraries
+          will typically be compiled without <code class="option">-fhpc</code>.
+          When the program is run, coverage data will only be
+          generated for those modules that were compiled with
+          <code class="option">-fhpc</code>, and the <code class="literal">hpc</code> tool
+          will only show information about those modules.
+          </p></dd></dl></div></div><div class="sect2" title="5.7.3. The hpc toolkit"><div class="titlepage"><div><div><h3 class="title"><a name="idp51415456"></a>5.7.3. The hpc toolkit</h3></div></div></div><p>The hpc command has several sub-commands:</p><pre class="screen">
+$ hpc
+Usage: hpc COMMAND ...
+
+Commands:
+  help        Display help for hpc or a single command
+Reporting Coverage:
+  report      Output textual report about program coverage
+  markup      Markup Haskell source with program coverage
+Processing Coverage files:
+  sum         Sum multiple .tix files in a single .tix file
+  combine     Combine two .tix files in a single .tix file
+  map         Map a function over a single .tix file
+Coverage Overlays:
+  overlay     Generate a .tix file from an overlay file
+  draft       Generate draft overlay that provides 100% coverage
+Others:
+  show        Show .tix file in readable, verbose format
+  version     Display version for hpc
+</pre><p>In general, these options act on a
+     <code class="filename">.tix</code> file after an instrumented binary has
+     generated it.
+	</p><p>
+		The hpc tool assumes you are in the top-level directory of
+                the location where you built your application, and the <code class="filename">.tix</code>
+		file is in the same top-level directory. You can use the
+                flag <code class="option">--srcdir</code> to use <code class="literal">hpc</code> for any other directory, and use
+                <code class="option">--srcdir</code> multiple times to analyse programs compiled from
+		difference locations, as is typical for packages.
+	</p><p>
+	We now explain in more details the major modes of hpc.
+     </p><div class="sect3" title="5.7.3.1. hpc report"><div class="titlepage"><div><div><h4 class="title"><a name="idp51422192"></a>5.7.3.1. hpc report</h4></div></div></div><p><code class="literal">hpc report</code> gives a textual report of coverage. By default,
+			all modules and packages are considered in generating report,
+			unless include or exclude are used. The report is a summary
+                        unless the <code class="option">--per-module</code> flag is used. The <code class="option">--xml-output</code> option
+			allows for tools to use hpc to glean coverage.
+		</p><pre class="screen">
+$ hpc help report
+Usage: hpc report [OPTION] .. &lt;TIX_FILE&gt; [&lt;MODULE&gt; [&lt;MODULE&gt; ..]]
+
+Options:
+
+    --per-module                  show module level detail
+    --decl-list                   show unused decls
+    --exclude=[PACKAGE:][MODULE]  exclude MODULE and/or PACKAGE
+    --include=[PACKAGE:][MODULE]  include MODULE and/or PACKAGE
+    --srcdir=DIR                  path to source directory of .hs files
+                                  multi-use of srcdir possible
+    --hpcdir=DIR                  sub-directory that contains .mix files
+                                  default .hpc [rarely used]
+    --xml-output                  show output in XML
+</pre></div><div class="sect3" title="5.7.3.2. hpc markup"><div class="titlepage"><div><div><h4 class="title"><a name="idp51426400"></a>5.7.3.2. hpc markup</h4></div></div></div><p><code class="literal">hpc markup</code> marks up source files into colored html.
+		</p><pre class="screen">
+$ hpc help markup
+Usage: hpc markup [OPTION] .. &lt;TIX_FILE&gt; [&lt;MODULE&gt; [&lt;MODULE&gt; ..]]
+
+Options:
+
+    --exclude=[PACKAGE:][MODULE]  exclude MODULE and/or PACKAGE
+    --include=[PACKAGE:][MODULE]  include MODULE and/or PACKAGE
+    --srcdir=DIR                  path to source directory of .hs files
+                                  multi-use of srcdir possible
+    --hpcdir=DIR                  sub-directory that contains .mix files
+                                  default .hpc [rarely used]
+    --fun-entry-count             show top-level function entry counts
+    --highlight-covered           highlight covered code, rather that code gaps
+    --destdir=DIR                 path to write output to
+</pre></div><div class="sect3" title="5.7.3.3. hpc sum"><div class="titlepage"><div><div><h4 class="title"><a name="idp51428624"></a>5.7.3.3. hpc sum</h4></div></div></div><p><code class="literal">hpc sum</code> adds together any number of <code class="filename">.tix</code> files into a single
+                <code class="filename">.tix</code> file. <code class="literal">hpc sum</code> does not change the original <code class="filename">.tix</code> file; it generates a new <code class="filename">.tix</code> file.
+		</p><pre class="screen">
+$ hpc help sum
+Usage: hpc sum [OPTION] .. &lt;TIX_FILE&gt; [&lt;TIX_FILE&gt; [&lt;TIX_FILE&gt; ..]]
+Sum multiple .tix files in a single .tix file
+
+Options:
+
+    --exclude=[PACKAGE:][MODULE]  exclude MODULE and/or PACKAGE
+    --include=[PACKAGE:][MODULE]  include MODULE and/or PACKAGE
+    --output=FILE                 output FILE
+    --union                       use the union of the module namespace (default is intersection)
+</pre></div><div class="sect3" title="5.7.3.4. hpc combine"><div class="titlepage"><div><div><h4 class="title"><a name="idp51435120"></a>5.7.3.4. hpc combine</h4></div></div></div><p><code class="literal">hpc combine</code> is the swiss army knife of <code class="literal">hpc</code>. It can be
+                 used to take the difference between <code class="filename">.tix</code> files, to subtract one
+		<code class="filename">.tix</code> file from another, or to add two <code class="filename">.tix</code> files. hpc combine does not
+		change the original <code class="filename">.tix</code> file; it generates a new <code class="filename">.tix</code> file.
+		</p><pre class="screen">
+$ hpc help combine
+Usage: hpc combine [OPTION] .. &lt;TIX_FILE&gt; &lt;TIX_FILE&gt;
+Combine two .tix files in a single .tix file
+
+Options:
+
+    --exclude=[PACKAGE:][MODULE]  exclude MODULE and/or PACKAGE
+    --include=[PACKAGE:][MODULE]  include MODULE and/or PACKAGE
+    --output=FILE                 output FILE
+    --function=FUNCTION           combine .tix files with join function, default = ADD
+                                  FUNCTION = ADD | DIFF | SUB
+    --union                       use the union of the module namespace (default is intersection)
+</pre></div><div class="sect3" title="5.7.3.5. hpc map"><div class="titlepage"><div><div><h4 class="title"><a name="idp51441344"></a>5.7.3.5. hpc map</h4></div></div></div><p>hpc map inverts or zeros a <code class="filename">.tix</code> file. hpc map does not
+		change the original <code class="filename">.tix</code> file; it generates a new <code class="filename">.tix</code> file.
+		</p><pre class="screen">
+$ hpc help map
+Usage: hpc map [OPTION] .. &lt;TIX_FILE&gt;
+Map a function over a single .tix file
+
+Options:
+
+    --exclude=[PACKAGE:][MODULE]  exclude MODULE and/or PACKAGE
+    --include=[PACKAGE:][MODULE]  include MODULE and/or PACKAGE
+    --output=FILE                 output FILE
+    --function=FUNCTION           apply function to .tix files, default = ID
+                                  FUNCTION = ID | INV | ZERO
+    --union                       use the union of the module namespace (default is intersection)
+</pre></div><div class="sect3" title="5.7.3.6. hpc overlay and hpc draft"><div class="titlepage"><div><div><h4 class="title"><a name="idp51445136"></a>5.7.3.6. hpc overlay and hpc draft</h4></div></div></div><p>
+			Overlays are an experimental feature of HPC, a textual description
+			of coverage. hpc draft is used to generate a draft overlay from a .tix file,
+			and hpc overlay generates a .tix files from an overlay.
+		</p><pre class="screen">
+% hpc help overlay
+Usage: hpc overlay [OPTION] .. &lt;OVERLAY_FILE&gt; [&lt;OVERLAY_FILE&gt; [...]]
+
+Options:
+
+    --srcdir=DIR   path to source directory of .hs files
+                   multi-use of srcdir possible
+    --hpcdir=DIR   sub-directory that contains .mix files
+                   default .hpc [rarely used]
+    --output=FILE  output FILE
+% hpc help draft
+Usage: hpc draft [OPTION] .. &lt;TIX_FILE&gt;
+
+Options:
+
+    --exclude=[PACKAGE:][MODULE]  exclude MODULE and/or PACKAGE
+    --include=[PACKAGE:][MODULE]  include MODULE and/or PACKAGE
+    --srcdir=DIR                  path to source directory of .hs files
+                                  multi-use of srcdir possible
+    --hpcdir=DIR                  sub-directory that contains .mix files
+                                  default .hpc [rarely used]
+    --output=FILE                 output FILE
+</pre></div></div><div class="sect2" title="5.7.4. Caveats and Shortcomings of Haskell Program Coverage"><div class="titlepage"><div><div><h3 class="title"><a name="idp51447024"></a>5.7.4. Caveats and Shortcomings of Haskell Program Coverage</h3></div></div></div><p>
+		HPC does not attempt to lock the <code class="filename">.tix</code> file, so multiple concurrently running
+		binaries in the same directory will exhibit a race condition. There is no way
+		to change the name of the <code class="filename">.tix</code> file generated, apart from renaming the binary.
+		HPC does not work with GHCi.
+  	  </p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="prof-threaded.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="profiling.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ticky-ticky.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">5.6. Profiling Parallel and Concurrent Programs </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 5.8. Using &#8220;ticky-ticky&#8221; profiling (for implementors)</td></tr></table></div></body></html>

@@ -1,0 +1,306 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>4.8. Warnings and sanity-checking</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="using-ghc.html" title="Chapter 4. Using GHC"><link rel="prev" href="separate-compilation.html" title="4.7. Filenames and separate compilation"><link rel="next" href="packages.html" title="4.9.  Packages"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">4.8. Warnings and sanity-checking</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="separate-compilation.html">Prev</a> </td><th width="60%" align="center">Chapter 4. Using GHC</th><td width="20%" align="right"> <a accesskey="n" href="packages.html">Next</a></td></tr></table><hr></div><div class="sect1" title="4.8. Warnings and sanity-checking"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="options-sanity"></a>4.8. Warnings and sanity-checking</h2></div></div></div><a class="indexterm" name="idp40950384"></a><a class="indexterm" name="idp40951152"></a><p>GHC has a number of options that select which types of
+    non-fatal error messages, otherwise known as warnings, can be
+    generated during compilation.  By default, you get a standard set
+    of warnings which are generally likely to indicate bugs in your
+    program.  These are:
+    <code class="option">-fwarn-overlapping-patterns</code>,
+    <code class="option">-fwarn-warnings-deprecations</code>,
+    <code class="option">-fwarn-deprecated-flags</code>,
+    <code class="option">-fwarn-duplicate-exports</code>,
+    <code class="option">-fwarn-missing-fields</code>,
+    <code class="option">-fwarn-missing-methods</code>,
+    <code class="option">-fwarn-lazy-unlifted-bindings</code>,
+    <code class="option">-fwarn-wrong-do-bind</code>,
+    <code class="option">-fwarn-unsupported-calling-conventions</code>, and
+    <code class="option">-fwarn-dodgy-foreign-imports</code>.  The following
+    flags are
+    simple ways to select standard &#8220;packages&#8221; of warnings:
+    </p><div class="variablelist"><dl><dt><span class="term"><code class="option">-W</code>:</span></dt><dd><a class="indexterm" name="idp40958640"></a><p>Provides the standard warnings plus
+          <code class="option">-fwarn-incomplete-patterns</code>,
+          <code class="option">-fwarn-dodgy-exports</code>,
+          <code class="option">-fwarn-dodgy-imports</code>,
+          <code class="option">-fwarn-unused-matches</code>,
+          <code class="option">-fwarn-unused-imports</code>, and
+          <code class="option">-fwarn-unused-binds</code>.</p></dd><dt><span class="term"><code class="option">-Wall</code>:</span></dt><dd><a class="indexterm" name="idp40963664"></a><p>Turns on all warning options that indicate potentially
+          suspicious code.  The warnings that are
+          <span class="emphasis"><em>not</em></span> enabled by <code class="option">-Wall</code>
+          are
+            <code class="option">-fwarn-tabs</code>,
+            <code class="option">-fwarn-incomplete-uni-patterns</code>,
+            <code class="option">-fwarn-incomplete-record-updates</code>,
+            <code class="option">-fwarn-monomorphism-restriction</code>,
+            <code class="option">-fwarn-auto-orphans</code>,
+            <code class="option">-fwarn-implicit-prelude</code>,
+            <code class="option">-fwarn-missing-local-sigs</code>,
+            <code class="option">-fwarn-missing-import-lists</code>.</p></dd><dt><span class="term"><code class="option">-w</code>:</span></dt><dd><a class="indexterm" name="idp40970784"></a><p>Turns off all warnings, including the standard ones and
+      those that <code class="literal">-Wall</code> doesn't enable.</p></dd><dt><span class="term"><code class="option">-Werror</code>:</span></dt><dd><a class="indexterm" name="idp40974224"></a><p>Makes any warning into a fatal error. Useful so that you don't
+            miss warnings when doing batch compilation. </p></dd><dt><span class="term"><code class="option">-Wwarn</code>:</span></dt><dd><a class="indexterm" name="idp40977056"></a><p>Warnings are treated only as warnings, not as errors. This is
+            the default, but can be useful to negate a
+        <code class="option">-Werror</code> flag.</p></dd></dl></div><p>The full set of warning options is described below.  To turn
+    off any warning, simply give the corresponding
+    <code class="option">-fno-warn-...</code> option on the command line.</p><div class="variablelist"><dl><dt><span class="term"><code class="option">-fdefer-type-errors</code>:</span></dt><dd><a class="indexterm" name="idp40981648"></a><a class="indexterm" name="idp40982688"></a><p>Defer as many type errors as possible until runtime.  
+            At compile time you get a warning (instead of an error).  At 
+            runtime, if you use a value that depends on a type error, you 
+            get a runtime error; but you can run any type-correct parts of your code 
+            just fine.  See <a class="xref" href="defer-type-errors.html" title="7.13. Deferring type errors to runtime">Section 7.13, &#8220;Deferring type errors to runtime&#8221;</a></p></dd><dt><span class="term"><code class="option">-fhelpful-errors</code>:</span></dt><dd><a class="indexterm" name="idp40986096"></a><a class="indexterm" name="idp40987136"></a><p>When a name or package is not found in scope, make
+            suggestions for the name or package you might have meant instead.</p><p>This option is on by default.</p></dd><dt><span class="term"><code class="option">-fwarn-unrecognised-pragmas</code>:</span></dt><dd><a class="indexterm" name="idp40990288"></a><a class="indexterm" name="idp40991328"></a><a class="indexterm" name="idp40992096"></a><p>Causes a warning to be emitted when a
+          pragma that GHC doesn't recognise is used. As well as pragmas
+      that GHC itself uses, GHC also recognises pragmas known to be used
+      by other tools, e.g. <code class="literal">OPTIONS_HUGS</code> and
+      <code class="literal">DERIVE</code>.</p><p>This option is on by default.</p></dd><dt><span class="term"><code class="option">-fwarn-warnings-deprecations</code>:</span></dt><dd><a class="indexterm" name="idp40996624"></a><a class="indexterm" name="idp40997664"></a><a class="indexterm" name="idp40998432"></a><p>Causes a warning to be emitted when a
+          module, function or type with a WARNING or DEPRECATED pragma
+      is used. See <a class="xref" href="pragmas.html#warning-deprecated-pragma" title="7.18.4. WARNING and DEPRECATED pragmas">Section 7.18.4, &#8220;WARNING and DEPRECATED pragmas&#8221;</a> for more
+      details on the pragmas.</p><p>This option is on by default.</p></dd><dt><span class="term"><code class="option">-fwarn-deprecated-flags</code>:</span></dt><dd><a class="indexterm" name="idp41002352"></a><a class="indexterm" name="idp41003392"></a><p>Causes a warning to be emitted when a deprecated
+          commandline flag is used.</p><p>This option is on by default.</p></dd><dt><span class="term"><code class="option">-fwarn-unsupported-calling-conventions</code>:</span></dt><dd><a class="indexterm" name="idp41006528"></a><p>Causes a warning to be emitted for foreign declarations
+          that use unsupported calling conventions. In particular,
+          if the <code class="literal">stdcall</code> calling convention is used
+          on an architecture other than i386 then it will be treated
+          as <code class="literal">ccall</code>.</p></dd><dt><span class="term"><code class="option">-fwarn-dodgy-foreign-imports</code>:</span></dt><dd><a class="indexterm" name="idp41010944"></a><p>Causes a warning to be emitted for foreign imports of
+          the following form:</p><pre class="programlisting">
+foreign import "f" f :: FunPtr t
+</pre><p>on the grounds that it probably should be</p><pre class="programlisting">
+foreign import "&amp;f" f :: FunPtr t
+</pre><p>The first form declares that `f` is a (pure) C
+          function that takes no arguments and returns a pointer to a
+          C function with type `t`, whereas the second form declares
+          that `f` itself is a C function with type `t`.  The first
+          declaration is usually a mistake, and one that is hard to
+          debug because it results in a crash, hence this
+          warning.</p></dd><dt><span class="term"><code class="option">-fwarn-dodgy-exports</code>:</span></dt><dd><a class="indexterm" name="idp41016464"></a><p>Causes a warning to be emitted when a datatype
+      <code class="literal">T</code> is exported
+      with all constructors, i.e. <code class="literal">T(..)</code>, but is it
+      just a type synonym.</p><p>Also causes a warning to be emitted when a module is
+      re-exported, but that module exports nothing.</p></dd><dt><span class="term"><code class="option">-fwarn-dodgy-imports</code>:</span></dt><dd><a class="indexterm" name="idp41021248"></a><p>Causes a warning to be emitted when a datatype
+      <code class="literal">T</code> is imported
+      with all constructors, i.e. <code class="literal">T(..)</code>, but has been
+      exported abstractly, i.e. <code class="literal">T</code>.</p></dd><dt><span class="term"><code class="option">-fwarn-lazy-unlifted-bindings</code>:</span></dt><dd><a class="indexterm" name="idp41026160"></a><p>Causes a warning to be emitted when an unlifted type
+      is bound in a way that looks lazy, e.g.
+      <code class="literal">where (I# x) = ...</code>. Use
+      <code class="literal">where !(I# x) = ...</code> instead. This will be an
+      error, rather than a warning, in GHC 7.2.
+      </p></dd><dt><span class="term"><code class="option">-fwarn-duplicate-exports</code>:</span></dt><dd><a class="indexterm" name="idp41030560"></a><a class="indexterm" name="idp41031472"></a><a class="indexterm" name="idp41032256"></a><p>Have the compiler warn about duplicate entries in
+          export lists. This is useful information if you maintain
+          large export lists, and want to avoid the continued export
+          of a definition after you've deleted (one) mention of it in
+          the export list.</p><p>This option is on by default.</p></dd><dt><span class="term"><code class="option">-fwarn-hi-shadowing</code>:</span></dt><dd><a class="indexterm" name="idp41035568"></a><a class="indexterm" name="idp41036480"></a><p>Causes the compiler to emit a warning when a module or
+          interface file in the current directory is shadowing one
+          with the same module name in a library or other
+          directory.</p></dd><dt><span class="term"><code class="option">-fwarn-identities</code>:</span></dt><dd><a class="indexterm" name="idp41039680"></a><p>Causes the compiler to emit a warning when a Prelude numeric
+            conversion converts a type T to the same type T; such calls
+            are probably no-ops and can be omitted.  The functions checked for
+            are: <code class="literal">toInteger</code>,
+            <code class="literal">toRational</code>,
+            <code class="literal">fromIntegral</code>,
+            and <code class="literal">realToFrac</code>.
+          </p></dd><dt><span class="term"><code class="option">-fwarn-implicit-prelude</code>:</span></dt><dd><a class="indexterm" name="idp41045296"></a><a class="indexterm" name="idp41046208"></a><p>Have the compiler warn if the Prelude is implicitly
+          imported.  This happens unless either the Prelude module is
+          explicitly imported with an <code class="literal">import ... Prelude ...</code>
+          line, or this implicit import is disabled (either by
+          <code class="option">-XNoImplicitPrelude</code> or a
+          <code class="literal">LANGUAGE NoImplicitPrelude</code> pragma).</p><p>Note that no warning is given for syntax that implicitly
+          refers to the Prelude, even if <code class="option">-XNoImplicitPrelude</code>
+          would change whether it refers to the Prelude.
+          For example, no warning is given when
+          <code class="literal">368</code> means
+          <code class="literal">Prelude.fromInteger (368::Prelude.Integer)</code>
+          (where <code class="literal">Prelude</code> refers to the actual Prelude module,
+          regardless of the imports of the module being compiled).</p><p>This warning is off by default.</p></dd><dt><span class="term"><code class="option">-fwarn-incomplete-patterns</code>,
+              <code class="option">-fwarn-incomplete-uni-patterns</code>:
+        </span></dt><dd><a class="indexterm" name="idp41054912"></a><a class="indexterm" name="idp41055824"></a><a class="indexterm" name="idp41056736"></a><a class="indexterm" name="idp41057520"></a><p>The option <code class="option">-fwarn-incomplete-patterns</code> warns
+            about places where
+            a pattern-match might fail at runtime.
+          The function
+          <code class="function">g</code> below will fail when applied to
+          non-empty lists, so the compiler will emit a warning about
+          this when <code class="option">-fwarn-incomplete-patterns</code> is
+          enabled.
+
+</p><pre class="programlisting">
+g [] = 2
+</pre><p>
+
+          This option isn't enabled by default because it can be
+          a bit noisy, and it doesn't always indicate a bug in the
+          program.  However, it's generally considered good practice
+          to cover all the cases in your functions, and it is switched
+          on by <code class="option">-W</code>.</p><p>The flag <code class="option">-fwarn-incomplete-uni-patterns</code> is
+          similar, except that it
+          applies only to lambda-expressions and pattern bindings, constructs
+          that only allow a single pattern:
+
+</p><pre class="programlisting">
+h = \[] -&gt; 2
+Just k = f y
+</pre><p>
+
+          </p></dd><dt><span class="term"><code class="option">-fwarn-incomplete-record-updates</code>:</span></dt><dd><a class="indexterm" name="idp41064912"></a><a class="indexterm" name="idp41065840"></a><a class="indexterm" name="idp41066640"></a><p>The function
+          <code class="function">f</code> below will fail when applied to
+          <code class="literal">Bar</code>, so the compiler will emit a warning about
+          this when <code class="option">-fwarn-incomplete-record-updates</code> is
+          enabled.</p><pre class="programlisting">
+data Foo = Foo { x :: Int }
+         | Bar
+
+f :: Foo -&gt; Foo
+f foo = foo { x = 6 }
+</pre><p>This option isn't enabled by default because it can be
+          very noisy, and it often doesn't indicate a bug in the
+          program.</p></dd><dt><span class="term">
+          <code class="option">-fwarn-missing-fields</code>:
+          <a class="indexterm" name="idp41072128"></a>
+          <a class="indexterm" name="idp41073040"></a>
+          <a class="indexterm" name="idp41073824"></a>
+        </span></dt><dd><p>This option is on by default, and warns you whenever
+          the construction of a labelled field constructor isn't
+          complete, missing initializers for one or more fields. While
+          not an error (the missing fields are initialised with
+          bottoms), it is often an indication of a programmer error.</p></dd><dt><span class="term">
+          <code class="option">-fwarn-missing-import-lists</code>:
+          <a class="indexterm" name="idp41076896"></a>
+          <a class="indexterm" name="idp41077808"></a>
+          <a class="indexterm" name="idp41078592"></a>
+        </span></dt><dd><p>This flag warns if you use an unqualified
+            <code class="literal">import</code> declaration
+            that does not explicitly list the entities brought into scope. For
+            example
+      </p><pre class="programlisting">
+module M where
+  import X( f )
+  import Y
+  import qualified Z
+  p x = f x x
+</pre><p>
+          The <code class="option">-fwarn-import-lists</code> flag will warn about the import
+          of <code class="literal">Y</code> but not <code class="literal">X</code>
+          If module <code class="literal">Y</code> is later changed to export (say) <code class="literal">f</code>,
+          then the reference to <code class="literal">f</code> in <code class="literal">M</code> will become
+          ambiguous.  No warning is produced for the import of <code class="literal">Z</code>
+          because extending <code class="literal">Z</code>'s exports would be unlikely to produce
+          ambiguity in <code class="literal">M</code>.
+        </p></dd><dt><span class="term"><code class="option">-fwarn-missing-methods</code>:</span></dt><dd><a class="indexterm" name="idp41106256"></a><a class="indexterm" name="idp41107152"></a><a class="indexterm" name="idp41107936"></a><p>This option is on by default, and warns you whenever
+          an instance declaration is missing one or more methods, and
+          the corresponding class declaration has no default
+          declaration for them.</p><p>The warning is suppressed if the method name
+          begins with an underscore.  Here's an example where this is useful:
+            </p><pre class="programlisting">
+              class C a where
+                _simpleFn :: a -&gt; String
+                complexFn :: a -&gt; a -&gt; String
+                complexFn x y = ... _simpleFn ...
+              </pre><p>
+            The idea is that: (a) users of the class will only call <code class="literal">complexFn</code>;
+            never <code class="literal">_simpleFn</code>; and (b)
+            instance declarations can define either <code class="literal">complexFn</code> or <code class="literal">_simpleFn</code>.
+            </p></dd><dt><span class="term"><code class="option">-fwarn-missing-signatures</code>:</span></dt><dd><a class="indexterm" name="idp41114880"></a><a class="indexterm" name="idp41115792"></a><p>If you would like GHC to check that every top-level
+          function/value has a type signature, use the
+          <code class="option">-fwarn-missing-signatures</code> option.  As part of
+            the warning GHC also reports the inferred type.  The
+          option is off by default.</p></dd><dt><span class="term"><code class="option">-fwarn-missing-local-sigs</code>:</span></dt><dd><a class="indexterm" name="idp41119072"></a><a class="indexterm" name="idp41119984"></a><p>If you use the
+          <code class="option">-fwarn-missing-local-sigs</code> flag GHC will warn
+          you about any polymorphic local bindings. As part of
+            the warning GHC also reports the inferred type. The
+          option is off by default.</p></dd><dt><span class="term"><code class="option">-fwarn-name-shadowing</code>:</span></dt><dd><a class="indexterm" name="idp41123232"></a><a class="indexterm" name="idp41124144"></a><p>This option causes a warning to be emitted whenever an
+          inner-scope value has the same name as an outer-scope value,
+          i.e. the inner value shadows the outer one.  This can catch
+          typographical errors that turn into hard-to-find bugs, e.g.,
+          in the inadvertent capture of what would be a recursive call in
+          <code class="literal">f = ... let f = id in ... f ...</code>.</p><p>The warning is suppressed for names beginning with an underscore.  For example
+          </p><pre class="programlisting">
+             f x = do { _ignore &lt;- this; _ignore &lt;- that; return (the other) }
+          </pre><p>
+         </p></dd><dt><span class="term"><code class="option">-fwarn-orphans, -fwarn-auto-orphans</code>:</span></dt><dd><a class="indexterm" name="idp41129184"></a><a class="indexterm" name="idp41130080"></a><a class="indexterm" name="idp41130992"></a><a class="indexterm" name="idp41131776"></a><p>These flags cause a warning to be emitted whenever the
+            module contains an "orphan" instance declaration or rewrite rule.
+            An instance declaration is an orphan if it appears in a module in
+            which neither the class nor the type being instanced are declared
+            in the same module.  A rule is an orphan if it is a rule for a
+            function declared in another module.  A module containing any
+          orphans is called an orphan module.</p><p>The trouble with orphans is that GHC must pro-actively read the interface
+            files for all orphan modules, just in case their instances or rules
+            play a role, whether or not the module's interface would otherwise
+            be of any use.  See <a class="xref" href="separate-compilation.html#orphan-modules" title="4.7.12. Orphan modules and instance declarations">Section 4.7.12, &#8220;Orphan modules and instance declarations&#8221;</a> for details.
+            </p><p>The flag <code class="option">-fwarn-orphans</code> warns about user-written
+            orphan rules or instances.  The flag <code class="option">-fwarn-auto-orphans</code>
+            warns about automatically-generated orphan rules, notably as a result of
+            specialising functions, for type classes (<code class="literal">Specialise</code>)
+            or argument values (<code class="literal">SpecConstr</code>).</p></dd><dt><span class="term">
+          <code class="option">-fwarn-overlapping-patterns</code>:
+          <a class="indexterm" name="idp41138672"></a>
+          <a class="indexterm" name="idp41139584"></a>
+          <a class="indexterm" name="idp41140368"></a>
+        </span></dt><dd><p>By default, the compiler will warn you if a set of
+          patterns are overlapping, e.g.,</p><pre class="programlisting">
+f :: String -&gt; Int
+f []     = 0
+f (_:xs) = 1
+f "2"    = 2
+</pre><p>where the last pattern match in <code class="function">f</code>
+          won't ever be reached, as the second pattern overlaps
+          it. More often than not, redundant patterns is a programmer
+          mistake/error, so this option is enabled by default.</p></dd><dt><span class="term"><code class="option">-fwarn-tabs</code>:</span></dt><dd><a class="indexterm" name="idp41145520"></a><a class="indexterm" name="idp41146416"></a><p>Have the compiler warn if there are tabs in your source
+          file.</p><p>This warning is off by default.</p></dd><dt><span class="term"><code class="option">-fwarn-type-defaults</code>:</span></dt><dd><a class="indexterm" name="idp41149472"></a><a class="indexterm" name="idp41150384"></a><p>Have the compiler warn/inform you where in your source
+          the Haskell defaulting mechanism for numeric types kicks
+          in. This is useful information when converting code from a
+          context that assumed one default into one with another,
+          e.g., the &#8216;default default&#8217; for Haskell 1.4 caused the
+          otherwise unconstrained value <code class="constant">1</code> to be
+          given the type <code class="literal">Int</code>, whereas Haskell 98
+          and later
+          defaults it to <code class="literal">Integer</code>.  This may lead to
+          differences in performance and behaviour, hence the
+          usefulness of being non-silent about this.</p><p>This warning is off by default.</p></dd><dt><span class="term"><code class="option">-fwarn-monomorphism-restriction</code>:</span></dt><dd><a class="indexterm" name="idp41155728"></a><a class="indexterm" name="idp41156640"></a><p>Have the compiler warn/inform you where in your source
+          the Haskell Monomorphism Restriction is applied.  If applied silently
+          the MR can give rise to unexpected behaviour, so it can be helpful
+          to have an explicit warning that it is being applied.</p><p>This warning is off by default.</p></dd><dt><span class="term"><code class="option">-fwarn-unused-binds</code>:</span></dt><dd><a class="indexterm" name="idp41159968"></a><a class="indexterm" name="idp41160880"></a><a class="indexterm" name="idp41161664"></a><p>Report any function definitions (and local bindings)
+          which are unused.  For top-level functions, the warning is
+          only given if the binding is not exported.</p><p>A definition is regarded as "used" if (a) it is exported, or (b) it is
+            mentioned in the right hand side of another definition that is used, or (c) the
+            function it defines begins with an underscore.  The last case provides a
+            way to suppress unused-binding warnings selectively.  </p><p> Notice that a variable
+            is reported as unused even if it appears in the right-hand side of another
+            unused binding. </p></dd><dt><span class="term"><code class="option">-fwarn-unused-imports</code>:</span></dt><dd><a class="indexterm" name="idp41165664"></a><a class="indexterm" name="idp41166576"></a><a class="indexterm" name="idp41167360"></a><p>Report any modules that are explicitly imported but
+          never used.  However, the form <code class="literal">import M()</code> is
+          never reported as an unused import, because it is a useful idiom
+          for importing instance declarations, which are anonymous in Haskell.</p></dd><dt><span class="term"><code class="option">-fwarn-unused-matches</code>:</span></dt><dd><a class="indexterm" name="idp41170848"></a><a class="indexterm" name="idp41171760"></a><a class="indexterm" name="idp41172544"></a><p>Report all unused variables which arise from pattern
+          matches, including patterns consisting of a single variable.
+          For instance <code class="literal">f x y = []</code> would report
+          <code class="varname">x</code> and <code class="varname">y</code> as unused.  The
+          warning is suppressed if the variable name begins with an underscore, thus:
+            </p><pre class="programlisting">
+               f _x = True
+            </pre><p>
+          </p></dd><dt><span class="term"><code class="option">-fwarn-unused-do-bind</code>:</span></dt><dd><a class="indexterm" name="idp41177552"></a><a class="indexterm" name="idp41178464"></a><a class="indexterm" name="idp41179248"></a><p>Report expressions occurring in <code class="literal">do</code> and <code class="literal">mdo</code> blocks
+          that appear to silently throw information away.
+          For instance <code class="literal">do { mapM popInt xs ; return 10 }</code> would report
+          the first statement in the <code class="literal">do</code> block as suspicious,
+          as it has the type <code class="literal">StackM [Int]</code> and not <code class="literal">StackM ()</code>, but that
+          <code class="literal">[Int]</code> value is not bound to anything.  The warning is suppressed by
+          explicitly mentioning in the source code that your program is throwing something away:
+            </p><pre class="programlisting">
+               do { _ &lt;- mapM popInt xs ; return 10 }
+            </pre><p>
+          Of course, in this particular situation you can do even better:
+            </p><pre class="programlisting">
+               do { mapM_ popInt xs ; return 10 }
+            </pre><p>
+          </p></dd><dt><span class="term"><code class="option">-fwarn-wrong-do-bind</code>:</span></dt><dd><a class="indexterm" name="idp41188448"></a><a class="indexterm" name="idp41189344"></a><a class="indexterm" name="idp41190144"></a><p>Report expressions occurring in <code class="literal">do</code> and <code class="literal">mdo</code> blocks
+          that appear to lack a binding.
+          For instance <code class="literal">do { return (popInt 10) ; return 10 }</code> would report
+          the first statement in the <code class="literal">do</code> block as suspicious,
+          as it has the type <code class="literal">StackM (StackM Int)</code> (which consists of two nested applications
+          of the same monad constructor), but which is not then "unpacked" by binding the result.
+          The warning is suppressed by explicitly mentioning in the source code that your program is throwing something away:
+            </p><pre class="programlisting">
+               do { _ &lt;- return (popInt 10) ; return 10 }
+            </pre><p>
+          For almost all sensible programs this will indicate a bug, and you probably intended to write:
+            </p><pre class="programlisting">
+               do { popInt 10 ; return 10 }
+            </pre><p>
+          </p></dd></dl></div><p>If you're feeling really paranoid, the
+    <code class="option">-dcore-lint</code>
+    option<a class="indexterm" name="idp41198320"></a>
+    is a good choice.  It turns on heavyweight intra-pass
+    sanity-checking within GHC.  (It checks GHC's sanity, not
+    yours.)</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="separate-compilation.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="using-ghc.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="packages.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">4.7. Filenames and separate compilation </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 4.9. 
+Packages
+ </td></tr></table></div></body></html>

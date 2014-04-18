@@ -1,0 +1,17 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>2.10. Compiling to object code inside GHCi</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghci.html" title="Chapter 2. Using GHCi"><link rel="prev" href="ghci-dot-files.html" title="2.9. The .ghci file"><link rel="next" href="ghci-faq.html" title="2.11. FAQ and Things To Watch Out For"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">2.10. Compiling to object code inside GHCi</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ghci-dot-files.html">Prev</a> </td><th width="60%" align="center">Chapter 2. Using GHCi</th><td width="20%" align="right"> <a accesskey="n" href="ghci-faq.html">Next</a></td></tr></table><hr></div><div class="sect1" title="2.10. Compiling to object code inside GHCi"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ghci-obj"></a>2.10. Compiling to object code inside GHCi</h2></div></div></div><p>By default, GHCi compiles Haskell source code into byte-code
+    that is interpreted by the runtime system.  GHCi can also compile
+    Haskell code to object code: to turn on this feature, use the
+    <code class="option">-fobject-code</code> flag either on the command line or
+    with <code class="literal">:set</code> (the option
+    <code class="option">-fbyte-code</code> restores byte-code compilation
+    again).  Compiling to object code takes longer, but typically the
+    code will execute 10-20 times faster than byte-code.</p><p>Compiling to object code inside GHCi is particularly useful
+    if you are developing a compiled application, because the
+    <code class="literal">:reload</code> command typically runs much faster than
+    restarting GHC with <code class="option">--make</code> from the command-line,
+    because all the interface files are already cached in
+    memory.</p><p>There are disadvantages to compiling to object-code: you
+    can't set breakpoints in object-code modules, for example.  Only
+    the exports of an object-code module will be visible in GHCi,
+    rather than all top-level bindings as in interpreted
+    modules.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ghci-dot-files.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghci.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ghci-faq.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">2.9. The <code class="filename">.ghci</code> file </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 2.11. FAQ and Things To Watch Out For</td></tr></table></div></body></html>

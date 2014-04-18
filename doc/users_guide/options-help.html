@@ -1,0 +1,61 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>4.6. Help and verbosity options</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="using-ghc.html" title="Chapter 4. Using GHC"><link rel="prev" href="modes.html" title="4.5. Modes of operation"><link rel="next" href="separate-compilation.html" title="4.7. Filenames and separate compilation"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">4.6. Help and verbosity options</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="modes.html">Prev</a> </td><th width="60%" align="center">Chapter 4. Using GHC</th><td width="20%" align="right"> <a accesskey="n" href="separate-compilation.html">Next</a></td></tr></table><hr></div><div class="sect1" title="4.6. Help and verbosity options"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="options-help"></a>4.6. Help and verbosity options</h2></div></div></div><a class="indexterm" name="idp40056224"></a><a class="indexterm" name="idp40056976"></a><p>See also the <code class="option">--help</code>, <code class="option">--version</code>, <code class="option">--numeric-version</code>,
+    and <code class="option">--print-libdir</code> modes in <a class="xref" href="modes.html" title="4.5. Modes of operation">Section 4.5, &#8220;Modes of operation&#8221;</a>.</p><div class="variablelist"><dl><dt><span class="term">
+          <code class="option">-v</code>
+          <a class="indexterm" name="idp40061568"></a>
+        </span></dt><dd><p>The <code class="option">-v</code> option makes GHC
+          <span class="emphasis"><em>verbose</em></span>: it reports its version number
+          and shows (on stderr) exactly how it invokes each phase of
+          the compilation system.  Moreover, it passes the
+          <code class="option">-v</code> flag to most phases; each reports its
+          version number (and possibly some other information).</p><p>Please, oh please, use the <code class="option">-v</code> option
+          when reporting bugs!  Knowing that you ran the right bits in
+          the right order is always the first thing we want to
+          verify.</p></dd><dt><span class="term">
+          <code class="option">-v</code><em class="replaceable"><code>n</code></em>
+          <a class="indexterm" name="idp40067072"></a>
+        </span></dt><dd><p>To provide more control over the compiler's verbosity,
+          the <code class="option">-v</code> flag takes an optional numeric
+          argument.  Specifying <code class="option">-v</code> on its own is
+          equivalent to <code class="option">-v3</code>, and the other levels
+          have the following meanings:</p><div class="variablelist"><dl><dt><span class="term"><code class="option">-v0</code></span></dt><dd><p>Disable all non-essential messages (this is the
+                default).</p></dd><dt><span class="term"><code class="option">-v1</code></span></dt><dd><p>Minimal verbosity: print one line per
+                compilation (this is the default when
+                <code class="option">&#8211;&#8211;make</code> or
+                <code class="option">&#8211;&#8211;interactive</code> is on).</p></dd><dt><span class="term"><code class="option">-v2</code></span></dt><dd><p>Print the name of each compilation phase as it
+                is executed. (equivalent to
+                <code class="option">-dshow-passes</code>).</p></dd><dt><span class="term"><code class="option">-v3</code></span></dt><dd><p>The same as <code class="option">-v2</code>, except that in
+                addition the full command line (if appropriate) for
+                each compilation phase is also printed.</p></dd><dt><span class="term"><code class="option">-v4</code></span></dt><dd><p>The same as <code class="option">-v3</code> except that the
+                intermediate program representation after each
+                compilation phase is also printed (excluding
+                preprocessed and C/assembly files).</p></dd></dl></div></dd><dt><span class="term"><code class="option">-ferror-spans</code>
+          <a class="indexterm" name="idp40082736"></a>
+        </span></dt><dd><p>Causes GHC to emit the full source span of the
+          syntactic entity relating to an error message.  Normally, GHC
+          emits the source location of the start of the syntactic
+          entity only.</p><p>For example:</p><pre class="screen">
+test.hs:3:6: parse error on input `where'
+</pre><p>becomes:</p><pre class="screen">
+test296.hs:3:6-10: parse error on input `where'
+</pre><p>And multi-line spans are possible too:</p><pre class="screen">
+test.hs:(5,4)-(6,7):
+    Conflicting definitions for `a'
+    Bound at: test.hs:5:4
+              test.hs:6:7
+    In the binding group for: a, b, a
+</pre><p>Note that line numbers start counting at one, but
+          column numbers start at zero.  This choice was made to
+          follow existing convention (i.e. this is how Emacs does
+          it).</p></dd><dt><span class="term"><code class="option">-H</code><em class="replaceable"><code>size</code></em>
+        <a class="indexterm" name="idp40090000"></a>
+        </span></dt><dd><p>Set the minimum size of the heap to
+          <em class="replaceable"><code>size</code></em>.
+          This option is equivalent to
+          <code class="literal">+RTS -H<em class="replaceable"><code>size</code></em></code>,
+          see <a class="xref" href="runtime-control.html#rts-options-gc" title="4.17.3. RTS options to control the garbage collector">Section 4.17.3, &#8220;RTS options to control the garbage collector&#8221;</a>.
+          </p></dd><dt><span class="term"><code class="option">-Rghc-timing</code>
+        <a class="indexterm" name="idp40094848"></a>
+        </span></dt><dd><p>Prints a one-line summary of timing statistics for the
+          GHC run.  This option is equivalent to
+          <code class="literal">+RTS -tstderr</code>, see <a class="xref" href="runtime-control.html#rts-options-gc" title="4.17.3. RTS options to control the garbage collector">Section 4.17.3, &#8220;RTS options to control the garbage collector&#8221;</a>.
+          </p></dd></dl></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="modes.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="using-ghc.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="separate-compilation.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">4.5. Modes of operation </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 4.7. Filenames and separate compilation</td></tr></table></div></body></html>

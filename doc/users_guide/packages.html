@@ -1,0 +1,890 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>4.9.  Packages</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="using-ghc.html" title="Chapter 4. Using GHC"><link rel="prev" href="options-sanity.html" title="4.8. Warnings and sanity-checking"><link rel="next" href="options-optimise.html" title="4.10. Optimisation (code improvement)"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">4.9. 
+Packages
+ </th></tr><tr><td width="20%" align="left"><a accesskey="p" href="options-sanity.html">Prev</a> </td><th width="60%" align="center">Chapter 4. Using GHC</th><td width="20%" align="right"> <a accesskey="n" href="options-optimise.html">Next</a></td></tr></table><hr></div><div class="sect1" title="4.9.  Packages"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="packages"></a>4.9. 
+Packages
+ </h2></div></div></div><a class="indexterm" name="idp41203472"></a><p>A package is a library of Haskell modules known to the
+    compiler.  GHC comes with several packages: see the accompanying
+    <a class="ulink" href="../libraries/index.html" target="_top">library
+    documentation</a>.  More packages to install can be obtained
+    from <a class="ulink" href="http://hackage.haskell.org/packages/hackage.html" target="_top">HackageDB</a>.</p><p>Using a package couldn't be simpler: if you're using
+    <code class="option">&#8211;&#8211;make</code> or GHCi, then most of the installed packages will be
+    automatically available to your program without any further options.  The
+    exceptions to this rule are covered below in <a class="xref" href="packages.html#using-packages" title="4.9.1. Using Packages">Section 4.9.1, &#8220;Using Packages
+  &#8221;</a>.</p><p>Building your own packages is also quite straightforward: we provide
+    the <a class="ulink" href="http://www.haskell.org/cabal/" target="_top">Cabal</a> infrastructure which
+    automates the process of configuring, building, installing and distributing
+    a package.  All you need to do is write a simple configuration file, put a
+    few files in the right places, and you have a package.  See the
+    <a class="ulink" href="../Cabal/index.html" target="_top">Cabal documentation</a>
+    for details, and also the Cabal libraries (<a class="ulink" href="../libraries/Cabal-1.16.0/Distribution-Simple.html" target="_top">Distribution.Simple</a>,
+    for example).</p><div class="sect2" title="4.9.1. Using Packages"><div class="titlepage"><div><div><h3 class="title"><a name="using-packages"></a>4.9.1. Using Packages
+  </h3></div></div></div><a class="indexterm" name="idp41211792"></a><p>GHC only knows about packages that are
+      <span class="emphasis"><em>installed</em></span>. To see which packages are installed, use
+      the <code class="literal">ghc-pkg list</code> command:</p><pre class="screen">
+$ ghc-pkg list
+/usr/lib/ghc-6.12.1/package.conf.d:
+    Cabal-1.7.4
+    array-0.2.0.1
+    base-3.0.3.0
+    base-4.2.0.0
+    bin-package-db-0.0.0.0
+    binary-0.5.0.1
+    bytestring-0.9.1.4
+    containers-0.2.0.1
+    directory-1.0.0.2
+    (dph-base-0.4.0)
+    (dph-par-0.4.0)
+    (dph-prim-interface-0.4.0)
+    (dph-prim-par-0.4.0)
+    (dph-prim-seq-0.4.0)
+    (dph-seq-0.4.0)
+    extensible-exceptions-0.1.1.0
+    ffi-1.0
+    filepath-1.1.0.1
+    (ghc-6.12.1)
+    ghc-prim-0.1.0.0
+    haskeline-0.6.2
+    haskell98-1.0.1.0
+    hpc-0.5.0.2
+    integer-gmp-0.1.0.0
+    mtl-1.1.0.2
+    old-locale-1.0.0.1
+    old-time-1.0.0.1
+    pretty-1.0.1.0
+    process-1.0.1.1
+    random-1.0.0.1
+    rts-1.0
+    syb-0.1.0.0
+    template-haskell-2.4.0.0
+    terminfo-0.3.1
+    time-1.1.4
+    unix-2.3.1.0
+    utf8-string-0.3.4
+</pre><p>An installed package is either <span class="emphasis"><em>exposed</em></span>
+      or <span class="emphasis"><em>hidden</em></span> by default.  Packages hidden by
+      default are listed in parentheses
+      (eg. <code class="literal">(lang-1.0)</code>), or possibly in blue if your
+      terminal supports colour, in the output of <code class="literal">ghc-pkg
+      list</code>.  Command-line flags, described below, allow you
+      to expose a hidden package or hide an exposed one.  Only modules
+      from exposed packages may be imported by your Haskell code; if
+      you try to import a module from a hidden package, GHC will emit
+      an error message.
+    </p><p>
+      Note: if you're using Cabal, then the exposed or hidden status
+      of a package is irrelevant: the available packages are instead
+      determined by the dependencies listed in
+      your <code class="literal">.cabal</code> specification.  The
+      exposed/hidden status of packages is only relevant when
+      using <code class="literal">ghc</code> or <code class="literal">ghci</code>
+      directly.
+    </p><p>Similar to a package's hidden status is a package's trusted
+      status. A package can be either trusted or not trusted (distrusted).
+      By default packages are distrusted. This property of a package only
+      plays a role when compiling code using GHC's Safe Haskell feature
+      (see <a class="xref" href="safe-haskell.html" title="7.25. Safe Haskell">Section 7.25, &#8220;Safe Haskell&#8221;</a>) with the
+      <code class="option">-fpackage-trust</code> flag enabled.
+    </p><p>To see which modules are provided by a package use the
+      <code class="literal">ghc-pkg</code> command (see <a class="xref" href="packages.html#package-management" title="4.9.6. Package management (the ghc-pkg command)">Section 4.9.6, &#8220;Package management (the <code class="literal">ghc-pkg</code> command)&#8221;</a>):</p><pre class="screen">
+$ ghc-pkg field network exposed-modules
+exposed-modules: Network.BSD,
+                 Network.CGI,
+                 Network.Socket,
+                 Network.URI,
+                 Network
+</pre><p>The GHC command line options that control packages are:</p><div class="variablelist"><dl><dt><span class="term">
+          <code class="option">-package <em class="replaceable"><code>P</code></em></code>
+          <a class="indexterm" name="idp41227872"></a>
+        </span></dt><dd><p>This option causes the installed
+            package <em class="replaceable"><code>P</code></em> to be exposed.  The
+            package <em class="replaceable"><code>P</code></em> can be specified in
+            full with its version number
+            (e.g. <code class="literal">network-1.0</code>) or the version
+            number can be omitted if there is only one version of the
+            package installed. If there are multiple versions
+            of <em class="replaceable"><code>P</code></em> installed, then all other
+            versions will become hidden.</p><p>The <code class="option">-package <em class="replaceable"><code>P</code></em></code>
+            option also causes package <em class="replaceable"><code>P</code></em> to
+            be linked into the resulting executable or shared
+            object. Whether a packages' library is linked statically
+            or dynamically is controlled by the flag
+            pair <code class="option">-static</code>/<code class="option">-dynamic</code>.</p><p>In <code class="option">&#8211;&#8211;make</code> mode
+            and <code class="option">&#8211;&#8211;interactive</code> mode (see
+            <a class="xref" href="modes.html" title="4.5. Modes of operation">Section 4.5, &#8220;Modes of operation&#8221;</a>), the compiler normally
+            determines which packages are required by the current
+            Haskell modules, and links only those.  In batch mode
+            however, the dependency information isn't available, and
+            explicit
+            <code class="option">-package</code> options must be given when linking. The one other time you might need to use
+            <code class="option">-package</code> to force linking a package is
+            when the package does not contain any Haskell modules (it
+            might contain a C library only, for example).  In that
+            case, GHC will never discover a dependency on it, so it
+            has to be mentioned explicitly.</p><p>For example, to link a program consisting of objects
+            <code class="filename">Foo.o</code> and <code class="filename">Main.o</code>, where
+            we made use of the <code class="literal">network</code> package, we need to
+            give GHC the <code class="literal">-package</code> flag thus:
+
+</p><pre class="screen">$ ghc -o myprog Foo.o Main.o -package network</pre><p>
+
+            The same flag is necessary even if we compiled the modules from
+            source, because GHC still reckons it's in batch mode:
+
+</p><pre class="screen">$ ghc -o myprog Foo.hs Main.hs -package network</pre></dd><dt><span class="term">
+          <code class="option">-package-id <em class="replaceable"><code>P</code></em></code>
+          <a class="indexterm" name="idp41243552"></a>
+        </span></dt><dd><p>
+            Exposes a package like <code class="option">-package</code>, but the
+            package is named by its ID rather than by name.  This is a
+            more robust way to name packages, and can be used to
+            select packages that would otherwise be shadowed.  Cabal
+            passes <code class="option">-package-id</code> flags to GHC.
+          </p></dd><dt><span class="term"><code class="option">-hide-all-packages</code>
+        <a class="indexterm" name="idp41247392"></a></span></dt><dd><p>Ignore the exposed flag on installed packages, and hide them
+            all by default.  If you use
+            this flag, then any packages you require (including
+            <code class="literal">base</code>) need to be explicitly exposed using
+            <code class="option">-package</code> options.</p><p>This is a good way to insulate your program from
+            differences in the globally exposed packages, and being
+            explicit about package dependencies is a Good Thing.
+            Cabal always passes the
+            <code class="option">-hide-all-packages</code> flag to GHC, for
+            exactly this reason.</p></dd><dt><span class="term"><code class="option">-hide-package</code> <em class="replaceable"><code>P</code></em>
+        <a class="indexterm" name="idp41252896"></a></span></dt><dd><p>This option does the opposite of <code class="option">-package</code>: it
+            causes the specified package to be <em class="firstterm">hidden</em>,
+            which means that none of its modules will be available for import
+            by Haskell <code class="literal">import</code> directives.</p><p>Note that the package might still end up being linked into the
+            final program, if it is a dependency (direct or indirect) of
+            another exposed package.</p></dd><dt><span class="term"><code class="option">-ignore-package</code> <em class="replaceable"><code>P</code></em>
+        <a class="indexterm" name="idp41258224"></a></span></dt><dd><p>Causes the compiler to behave as if package
+            <em class="replaceable"><code>P</code></em>, and any packages that depend on
+            <code class="literal">P</code>, are not installed at all.</p><p>Saying <code class="literal">-ignore-package P</code> is the same as
+            giving <code class="literal">-hide-package</code> flags for
+            <code class="literal">P</code> and all the packages that depend on
+            <code class="literal">P</code>.  Sometimes we don't know ahead of time which
+            packages will be installed that depend on <code class="literal">P</code>,
+            which is when the <code class="literal">-ignore-package</code> flag can be
+            useful.</p></dd><dt><span class="term"><code class="option">-no-auto-link-packages</code>
+        <a class="indexterm" name="idp41266656"></a></span></dt><dd><p>By default, GHC will automatically link in the
+            <code class="literal">haskell98</code> package. This flag disables that
+            behaviour.</p></dd><dt><span class="term"><code class="option">-package-name</code> <em class="replaceable"><code>foo</code></em>
+        <a class="indexterm" name="idp41270528"></a></span></dt><dd><p>Tells GHC the the module being compiled forms part of
+            package <em class="replaceable"><code>foo</code></em>.
+            If this flag is omitted (a very common case) then the
+            default package <code class="literal">main</code> is assumed.</p><p>Note: the argument to <code class="option">-package-name</code>
+              should be the full
+              package <code class="literal">name-version</code> for the package.
+              For example:
+            <code class="literal">-package mypkg-1.2</code>.</p></dd><dt><span class="term"><code class="option">-trust</code> <em class="replaceable"><code>P</code></em>
+        <a class="indexterm" name="idp41277088"></a></span></dt><dd><p>This option causes the install package <em class="replaceable"><code>P
+            </code></em> to be both exposed and trusted by GHC. This
+            command functions in the in a very similar way to the <code class="option">
+            -package</code> command but in addition sets the selected
+            packaged to be trusted by GHC, regardless of the contents of
+            the package database. (see <a class="xref" href="safe-haskell.html" title="7.25. Safe Haskell">Section 7.25, &#8220;Safe Haskell&#8221;</a>).
+          </p></dd><dt><span class="term"><code class="option">-distrust</code> <em class="replaceable"><code>P</code></em>
+        <a class="indexterm" name="idp41281920"></a></span></dt><dd><p>This option causes the install package <em class="replaceable"><code>P
+            </code></em> to be both exposed and distrusted by GHC. This
+            command functions in the in a very similar way to the <code class="option">
+            -package</code> command but in addition sets the selected
+            packaged to be distrusted by GHC, regardless of the contents of
+            the package database. (see <a class="xref" href="safe-haskell.html" title="7.25. Safe Haskell">Section 7.25, &#8220;Safe Haskell&#8221;</a>).
+          </p></dd><dt><span class="term"><code class="option">-distrust-all</code>
+        <a class="indexterm" name="idp41286384"></a></span></dt><dd><p>Ignore the trusted flag on installed packages, and distrust
+            them by default. If you use this flag and Safe Haskell then any
+            packages you require to be trusted (including <code class="literal">base
+            </code>) need to be explicitly trusted using <code class="option">-trust
+            </code> options. This option does not change the exposed/hidden
+            status of a package, so it isn't equivalent to applying <code class="option">
+            -distrust</code> to all packages on the system. (see
+            <a class="xref" href="safe-haskell.html" title="7.25. Safe Haskell">Section 7.25, &#8220;Safe Haskell&#8221;</a>).
+          </p></dd></dl></div></div><div class="sect2" title="4.9.2. The main package"><div class="titlepage"><div><div><h3 class="title"><a name="package-main"></a>4.9.2. The main package</h3></div></div></div><p>Every complete Haskell program must define <code class="literal">main</code> in
+   module <code class="literal">Main</code>
+   in package <code class="literal">main</code>.   (Omitting the <code class="option">-package-name</code> flag compiles
+   code for package <code class="literal">main</code>.) Failure to do so leads to a somewhat obscure
+   link-time error of the form:
+</p><pre class="programlisting">
+/usr/bin/ld: Undefined symbols:
+_ZCMain_main_closure
+</pre><p>
+</p></div><div class="sect2" title="4.9.3. Consequences of packages for the Haskell language"><div class="titlepage"><div><div><h3 class="title"><a name="package-overlaps"></a>4.9.3. Consequences of packages for the Haskell language</h3></div></div></div><p>It is possible that by using packages you might end up with
+    a program that contains two modules with the same name: perhaps
+    you used a package P that has a <span class="emphasis"><em>hidden</em></span> module
+    M, and there is also a module M in your program.  Or perhaps the
+    dependencies of packages that you used contain some overlapping
+    modules.  Perhaps the program even contains multiple versions of a
+    certain package, due to dependencies from other packages.</p><p>None of these scenarios gives rise to an error on its
+    own<sup>[<a name="idp41299136" href="#ftn.idp41299136" class="footnote">8</a>]</sup>, but they may have some interesting
+    consequences.  For instance, if you have a type
+    <code class="literal">M.T</code> from version 1 of package
+    <code class="literal">P</code>, then this is <span class="emphasis"><em>not</em></span> the
+    same as the type <code class="literal">M.T</code> from version 2 of package
+    <code class="literal">P</code>, and GHC will report an error if you try to
+    use one where the other is expected.</p><p>Formally speaking, in Haskell 98, an entity (function, type
+    or class) in a program is uniquely identified by the pair of the
+    module name in which it is defined and its name.  In GHC, an
+    entity is uniquely defined by a triple: package, module, and
+    name.</p></div><div class="sect2" title="4.9.4. Package Databases"><div class="titlepage"><div><div><h3 class="title"><a name="package-databases"></a>4.9.4. Package Databases</h3></div></div></div><p>
+      A package database is where the details about installed packages
+      are stored.  It is a directory, usually
+      called <code class="literal">package.conf.d</code>, that contains a file
+      for each package, together with a binary cache of the package
+      data in the file <code class="literal">package.cache</code>.  Normally
+      you won't need to look at or modify the contents of a package
+      database directly; all management of package databases can be
+      done through the <code class="literal">ghc-pkg</code> tool (see
+      <a class="xref" href="packages.html#package-management" title="4.9.6. Package management (the ghc-pkg command)">Section 4.9.6, &#8220;Package management (the <code class="literal">ghc-pkg</code> command)&#8221;</a>).
+    </p><p>
+      GHC knows about two package databases in particular:
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>The global package database, which comes with your GHC
+          installation,
+          e.g. <code class="filename">/usr/lib/ghc-6.12.1/package.conf.d</code>.</p></li><li class="listitem"><p>A package database private to each user.  On Unix
+          systems this will be
+          <code class="filename">$HOME/.ghc/<em class="replaceable"><code>arch</code></em>-<em class="replaceable"><code>os</code></em>-<em class="replaceable"><code>version</code></em>/package.conf.d</code>, and on
+          Windows it will be something like
+          <code class="filename">C:\Documents And Settings\<em class="replaceable"><code>user</code></em>\ghc\package.conf.d</code>.
+          The <code class="literal">ghc-pkg</code> tool knows where this file should be
+          located, and will create it if it doesn't exist (see <a class="xref" href="packages.html#package-management" title="4.9.6. Package management (the ghc-pkg command)">Section 4.9.6, &#8220;Package management (the <code class="literal">ghc-pkg</code> command)&#8221;</a>).</p></li></ul></div><p>When GHC starts up, it reads the contents of these two package
+      databases, and builds up a list of the packages it knows about.  You can
+      see GHC's package table by running GHC with the <code class="option">-v</code>
+      flag.</p><p>Package databases may overlap, and they are arranged in a stack
+      structure. Packages closer to the top of the stack will override
+      (<span class="emphasis"><em>shadow</em></span>) those below them. By default, the stack
+      contains just the global and the user's package databases, in that
+      order.</p><p>You can control GHC's package database stack using the following
+      options:</p><div class="variablelist"><dl><dt><span class="term">
+          <code class="option">-package-db <em class="replaceable"><code>file</code></em></code>
+          <a class="indexterm" name="idp41319856"></a>
+        </span></dt><dd><p>Add the package database <em class="replaceable"><code>file</code></em> on top
+              of the current stack. Packages in additional databases read this
+              way will override those in the initial stack and those in
+              previously specified databases.</p></dd><dt><span class="term"><code class="option">-no-global-package-db</code>
+          <a class="indexterm" name="idp41323184"></a>
+        </span></dt><dd><p>Remove the global package database from the package database
+              stack.</p></dd><dt><span class="term"><code class="option">-no-user-package-db</code>
+          <a class="indexterm" name="idp41326144"></a>
+        </span></dt><dd><p>Prevent loading of the user's local package database in the
+              initial stack.</p></dd><dt><span class="term"><code class="option">-clear-package-db</code>
+          <a class="indexterm" name="idp41329104"></a>
+        </span></dt><dd><p>Reset the current package database stack. This option removes
+                every previously specified package database (including those
+                read from the <code class="literal">GHC_PACKAGE_PATH</code> environment
+                variable) from the package database stack.</p></dd><dt><span class="term"><code class="option">-global-package-db</code>
+          <a class="indexterm" name="idp41332880"></a>
+        </span></dt><dd><p>Add the global package database on top of the current stack.
+            This option can be used after
+            <code class="literal">-no-global-package-db</code> to specify the position in
+            the stack where the global package database should be
+            loaded.</p></dd><dt><span class="term"><code class="option">-user-package-db</code>
+          <a class="indexterm" name="idp41336656"></a>
+        </span></dt><dd><p>Add the user's package database on top of the current stack.
+            This option can be used after
+            <code class="literal">-no-user-package-db</code> to specify the position in
+            the stack where the user's package database should be
+            loaded.</p></dd></dl></div><div class="sect3" title="4.9.4.1. The GHC_PACKAGE_PATH environment variable"><div class="titlepage"><div><div><h4 class="title"><a name="ghc-package-path"></a>4.9.4.1. The <code class="literal">GHC_PACKAGE_PATH</code> environment variable</h4></div></div></div><a class="indexterm" name="idp41341488"></a><a class="indexterm" name="idp41343056"></a><p>The <code class="literal">GHC_PACKAGE_PATH</code> environment variable may be
+        set to a <code class="literal">:</code>-separated (<code class="literal">;</code>-separated
+        on Windows) list of files containing package databases.  This list of
+        package databases is used by GHC and ghc-pkg, with earlier databases in
+        the list overriding later ones.  This order was chosen to match the
+        behaviour of the <code class="literal">PATH</code> environment variable; think of
+        it as a list of package databases that are searched left-to-right for
+        packages.</p><p>If <code class="literal">GHC_PACKAGE_PATH</code> ends in a separator, then
+        the default package database stack (i.e. the user and global
+        package databases, in that order) is appended. For example, to augment
+        the usual set of packages with a database of your own, you could say
+        (on Unix):
+
+        </p><pre class="screen"> $ export GHC_PACKAGE_PATH=$HOME/.my-ghc-packages.conf:</pre><p>
+
+        (use <code class="literal">;</code> instead of <code class="literal">:</code> on
+        Windows).</p><p>To check whether your <code class="literal">GHC_PACKAGE_PATH</code> setting
+        is doing the right thing, <code class="literal">ghc-pkg list</code> will list all
+        the databases in use, in the reverse order they are searched.</p></div></div><div class="sect2" title="4.9.5. Package IDs, dependencies, and broken packages"><div class="titlepage"><div><div><h3 class="title"><a name="package-ids"></a>4.9.5. Package IDs, dependencies, and broken packages</h3></div></div></div><p>Each installed package has a unique identifier (the
+      &#8220;installed package ID&#8221;, or just &#8220;package
+      ID&#8221; for short) , which distinguishes it from all other
+      installed packages on the system.  To see the package IDs
+      associated with each installed package, use <code class="literal">ghc-pkg
+      list -v</code>:</p><pre class="screen">
+$ ghc-pkg list -v
+using cache: /usr/lib/ghc-6.12.1/package.conf.d/package.cache
+/usr/lib/ghc-6.12.1/package.conf.d
+   Cabal-1.7.4 (Cabal-1.7.4-48f5247e06853af93593883240e11238)
+   array-0.2.0.1 (array-0.2.0.1-9cbf76a576b6ee9c1f880cf171a0928d)
+   base-3.0.3.0 (base-3.0.3.0-6cbb157b9ae852096266e113b8fac4a2)
+   base-4.2.0.0 (base-4.2.0.0-247bb20cde37c3ef4093ee124e04bc1c)
+   ...
+</pre><p>
+      The string in parentheses after the package name is the package
+      ID: it normally begins with the package name and version, and
+      ends in a hash string derived from the compiled package.
+      Dependencies between packages are expressed in terms of package
+      IDs, rather than just packages and versions.  For example, take
+      a look at the dependencies of the <code class="literal">haskell98</code>
+      package:
+    </p><pre class="screen">
+$ ghc-pkg field haskell98 depends
+depends: array-0.2.0.1-9cbf76a576b6ee9c1f880cf171a0928d
+         base-4.2.0.0-247bb20cde37c3ef4093ee124e04bc1c
+         directory-1.0.0.2-f51711bc872c35ce4a453aa19c799008
+         old-locale-1.0.0.1-d17c9777c8ee53a0d459734e27f2b8e9
+         old-time-1.0.0.1-1c0d8ea38056e5087ef1e75cb0d139d1
+         process-1.0.1.1-d8fc6d3baf44678a29b9d59ca0ad5780
+         random-1.0.0.1-423d08c90f004795fd10e60384ce6561
+</pre><p>
+      The purpose of the package ID is to detect problems caused by
+      re-installing a package without also recompiling the packages
+      that depend on it.  Recompiling dependencies is necessary,
+      because the newly compiled package may have a different ABI
+      (Application Binary Interface) than the previous version, even
+      if both packages were built from the same source code using the
+      same compiler.  With package IDs, a recompiled
+      package will have a different package ID from the previous
+      version, so packages that depended on the previous version are
+      now orphaned - one of their dependencies is not satisfied.
+      Packages that are broken in this way are shown in
+      the <code class="literal">ghc-pkg list</code> output either in red (if
+      possible) or otherwise surrounded by braces.  In the following
+      example, we have recompiled and reinstalled
+      the <code class="literal">filepath</code> package, and this has caused
+      various dependencies including <code class="literal">Cabal</code> to
+      break:</p><pre class="screen">
+$ ghc-pkg list
+WARNING: there are broken packages.  Run 'ghc-pkg check' for more details.
+/usr/lib/ghc-6.12.1/package.conf.d:
+    {Cabal-1.7.4}
+    array-0.2.0.1
+    base-3.0.3.0
+    ... etc ...
+</pre><p>
+      Additionally, <code class="literal">ghc-pkg list</code> reminds you that
+      there are broken packages and suggests <code class="literal">ghc-pkg
+      check</code>, which displays more information about the
+      nature of the failure:
+    </p><pre class="screen">
+$ ghc-pkg check
+There are problems in package ghc-6.12.1:
+  dependency "filepath-1.1.0.1-87511764eb0af2bce4db05e702750e63" doesn't exist
+There are problems in package haskeline-0.6.2:
+  dependency "filepath-1.1.0.1-87511764eb0af2bce4db05e702750e63" doesn't exist
+There are problems in package Cabal-1.7.4:
+  dependency "filepath-1.1.0.1-87511764eb0af2bce4db05e702750e63" doesn't exist
+There are problems in package process-1.0.1.1:
+  dependency "filepath-1.1.0.1-87511764eb0af2bce4db05e702750e63" doesn't exist
+There are problems in package directory-1.0.0.2:
+  dependency "filepath-1.1.0.1-87511764eb0af2bce4db05e702750e63" doesn't exist
+
+The following packages are broken, either because they have a problem
+listed above, or because they depend on a broken package.
+ghc-6.12.1
+haskeline-0.6.2
+Cabal-1.7.4
+process-1.0.1.1
+directory-1.0.0.2
+bin-package-db-0.0.0.0
+hpc-0.5.0.2
+haskell98-1.0.1.0
+</pre><p>
+      To fix the problem, you need to recompile the broken packages
+      against the new dependencies.  The easiest way to do this is to
+      use <code class="literal">cabal-install</code>, or download the packages
+      from <a class="ulink" href="http://hackage.haskell.org/packages/hackage.html" target="_top">HackageDB</a>
+      and build and install them as normal.</p><p>Be careful not to recompile any packages that GHC itself
+      depends on, as this may render the <code class="literal">ghc</code>
+      package itself broken, and <code class="literal">ghc</code> cannot be
+      simply recompiled.  The only way to recover from this would be
+      to re-install GHC.</p></div><div class="sect2" title="4.9.6. Package management (the ghc-pkg command)"><div class="titlepage"><div><div><h3 class="title"><a name="package-management"></a>4.9.6. Package management (the <code class="literal">ghc-pkg</code> command)</h3></div></div></div><a class="indexterm" name="idp41372080"></a><p>The <code class="literal">ghc-pkg</code> tool is for querying and
+      modifying package databases.  To see what package databases are
+      in use, use
+      <code class="literal">ghc-pkg list</code>.  The stack of databases that
+      <code class="literal">ghc-pkg</code> knows about can be modified using the
+      <code class="literal">GHC_PACKAGE_PATH</code> environment variable (see <a class="xref" href="packages.html#ghc-package-path" title="4.9.4.1. The GHC_PACKAGE_PATH environment variable">Section 4.9.4.1, &#8220;The <code class="literal">GHC_PACKAGE_PATH</code> environment variable&#8221;</a>, and using
+        <code class="literal">--package-db</code> options on the
+        <code class="literal">ghc-pkg</code> command line.</p><p>When asked to modify a database, <code class="literal">ghc-pkg</code> modifies
+      the global database by default.  Specifying <code class="option">--user</code>
+      causes it to act on the user database, or <code class="option">--package-db</code>
+      can be used to act on another database entirely.  When multiple of these
+      options are given, the rightmost one is used as the database to act
+      upon.</p><p>Commands that query the package database (list, latest,
+     describe, field, dot) operate on the list of databases specified by
+     the flags <code class="option">--user</code>, <code class="option">--global</code>, and
+     <code class="option">--package-db</code>.  If none of these flags are
+     given, the default is <code class="option">--global</code>
+     <code class="option">--user</code>.</p><p>If the environment variable <code class="literal">GHC_PACKAGE_PATH</code> is
+      set, and its value does not end in a separator (<code class="literal">:</code> on
+      Unix, <code class="literal">;</code> on Windows), then the last database is
+      considered to be the global database, and will be modified by default by
+      <code class="literal">ghc-pkg</code>.  The intention here is that
+      <code class="literal">GHC_PACKAGE_PATH</code> can be used to create a virtual
+      package environment into which Cabal packages can be installed without
+      setting anything other than <code class="literal">GHC_PACKAGE_PATH</code>.</p><p>The <code class="literal">ghc-pkg</code> program may be run in the ways listed
+      below.  Where a package name is required, the package can be named in
+      full including the version number
+      (e.g. <code class="literal">network-1.0</code>), or without the version number.
+      Naming a package without the version number matches all versions of the
+      package; the specified action will be applied to all the matching
+      packages.  A package specifier that matches all version of the package
+      can also be written <em class="replaceable"><code>pkg</code></em><code class="literal">-*</code>,
+      to make it clearer that multiple packages are being matched.</p><div class="variablelist"><dl><dt><span class="term"><code class="literal">ghc-pkg init <em class="replaceable"><code>path</code></em></code></span></dt><dd><p>Creates a new, empty, package database
+            at <em class="replaceable"><code>path</code></em>, which must not already
+            exist.</p></dd><dt><span class="term"><code class="literal">ghc-pkg register <em class="replaceable"><code>file</code></em></code></span></dt><dd><p>Reads a package specification from
+            <em class="replaceable"><code>file</code></em> (which may be &#8220;<code class="literal">-</code>&#8221;
+            to indicate standard input),
+            and adds it to the database of installed packages.  The syntax of
+            <em class="replaceable"><code>file</code></em> is given in <a class="xref" href="packages.html#installed-pkg-info" title="4.9.8.  InstalledPackageInfo: a package specification">Section 4.9.8, &#8220;
+      <code class="literal">InstalledPackageInfo</code>: a package specification
+    &#8221;</a>.</p><p>The package specification must be a package that isn't already
+            installed.</p></dd><dt><span class="term"><code class="literal">ghc-pkg update <em class="replaceable"><code>file</code></em></code></span></dt><dd><p>The same as <code class="literal">register</code>, except that if a
+            package of the same name is already installed, it is
+            replaced by the new one.</p></dd><dt><span class="term"><code class="literal">ghc-pkg unregister <em class="replaceable"><code>P</code></em></code></span></dt><dd><p>Remove the specified package from the database.</p></dd><dt><span class="term"><code class="literal">ghc-pkg check</code></span></dt><dd><p>Check consistency of dependencies in the package
+          database, and report packages that have missing
+          dependencies.</p></dd><dt><span class="term"><code class="literal">ghc-pkg expose <em class="replaceable"><code>P</code></em></code></span></dt><dd><p>Sets the <code class="literal">exposed</code> flag for package
+            <em class="replaceable"><code>P</code></em> to <code class="literal">True</code>.</p></dd><dt><span class="term"><code class="literal">ghc-pkg hide <em class="replaceable"><code>P</code></em></code></span></dt><dd><p>Sets the <code class="literal">exposed</code> flag for package
+            <em class="replaceable"><code>P</code></em> to <code class="literal">False</code>.</p></dd><dt><span class="term"><code class="literal">ghc-pkg trust <em class="replaceable"><code>P</code></em></code></span></dt><dd><p>Sets the <code class="literal">trusted</code> flag for package
+            <em class="replaceable"><code>P</code></em> to <code class="literal">True</code>.</p></dd><dt><span class="term"><code class="literal">ghc-pkg distrust <em class="replaceable"><code>P</code></em></code></span></dt><dd><p>Sets the <code class="literal">trusted</code> flag for package
+            <em class="replaceable"><code>P</code></em> to <code class="literal">False</code>.</p></dd><dt><span class="term"><code class="literal">ghc-pkg list [<em class="replaceable"><code>P</code></em>] [<code class="option">--simple-output</code>]</code></span></dt><dd><p>This option displays the currently installed
+            packages, for each of the databases known to
+            <code class="literal">ghc-pkg</code>.  That includes the global database, the
+            user's local database, and any further files specified using the
+            <code class="option">-f</code> option on the command line.</p><p>Hidden packages (those for which the <code class="literal">exposed</code>
+            flag is <code class="literal">False</code>) are shown in parentheses in the
+            list of packages.</p><p>If an optional package identifier <em class="replaceable"><code>P</code></em>
+            is given, then only packages matching that identifier are
+            shown.</p><p>If the option <code class="option">--simple-output</code> is given, then
+            the packages are listed on a single line separated by spaces, and
+            the database names are not included.  This is intended to make it
+            easier to parse the output of <code class="literal">ghc-pkg list</code> using
+            a script.</p></dd><dt><span class="term"><code class="literal">ghc-pkg find-module <em class="replaceable"><code>M</code></em> [<code class="option">--simple-output</code>]</code></span></dt><dd><p>This option lists registered packages exposing module
+      <em class="replaceable"><code>M</code></em>. Examples:</p><pre class="screen">
+$ ghc-pkg find-module Var
+c:/fptools/validate/ghc/driver/package.conf.inplace:
+    (ghc-6.9.20080428)
+
+$ ghc-pkg find-module Data.Sequence
+c:/fptools/validate/ghc/driver/package.conf.inplace:
+    containers-0.1
+</pre><p>Otherwise, it behaves like <code class="literal">ghc-pkg list</code>,
+  including options.</p></dd><dt><span class="term"><code class="literal">ghc-pkg latest <em class="replaceable"><code>P</code></em></code></span></dt><dd><p>Prints the latest available version of package
+            <em class="replaceable"><code>P</code></em>.</p></dd><dt><span class="term"><code class="literal">ghc-pkg describe <em class="replaceable"><code>P</code></em></code></span></dt><dd><p>Emit the full description of the specified package.  The
+            description is in the form of an
+            <code class="literal">InstalledPackageInfo</code>, the same as the input file
+            format for <code class="literal">ghc-pkg register</code>.  See <a class="xref" href="packages.html#installed-pkg-info" title="4.9.8.  InstalledPackageInfo: a package specification">Section 4.9.8, &#8220;
+      <code class="literal">InstalledPackageInfo</code>: a package specification
+    &#8221;</a> for details.</p><p>If the pattern matches multiple packages, the
+            description for each package is emitted, separated by the
+            string <code class="literal">---</code> on a line by itself.</p></dd><dt><span class="term"><code class="literal">ghc-pkg field <em class="replaceable"><code>P</code></em> <em class="replaceable"><code>field</code></em>[,<em class="replaceable"><code>field</code></em>]*</code></span></dt><dd><p>Show just a single field of the installed package description
+      for <code class="literal">P</code>. Multiple fields can be selected by separating
+      them with commas</p></dd><dt><span class="term"><code class="literal">ghc-pkg dot</code></span></dt><dd><p>
+            Generate a graph of the package dependencies in a form
+            suitable for input for the <a class="ulink" href="http://www.graphviz.org/" target="_top">graphviz</a> tools.  For example,
+            to generate a PDF of the dependency graph:</p><pre class="screen">
+ghc-pkg dot | tred | dot -Tpdf &gt;pkgs.pdf
+</pre></dd><dt><span class="term"><code class="literal">ghc-pkg dump</code></span></dt><dd><p>Emit the full description of every package, in the
+            form of an <code class="literal">InstalledPackageInfo</code>.
+            Multiple package descriptions are separated by the
+            string <code class="literal">---</code> on a line by itself.</p><p>This is almost the same as <code class="literal">ghc-pkg describe '*'</code>, except that <code class="literal">ghc-pkg dump</code>
+            is intended for use by tools that parse the results, so
+            for example where <code class="literal">ghc-pkg describe '*'</code>
+            will emit an error if it can't find any packages that
+            match the pattern, <code class="literal">ghc-pkg dump</code> will
+            simply emit nothing.</p></dd><dt><span class="term"><code class="literal">ghc-pkg recache</code></span></dt><dd><p>
+            Re-creates the binary cache
+            file <code class="filename">package.cache</code> for the selected
+            database.  This may be necessary if the cache has somehow
+            become out-of-sync with the contents of the database
+            (<code class="literal">ghc-pkg</code> will warn you if this might be
+            the case).</p><p>
+            The other time when <code class="literal">ghc-pkg recache</code> is
+            useful is for registering packages manually: it is
+            possible to register a package by simply putting the
+            appropriate file in the package database directory and
+            invoking <code class="literal">ghc-pkg recache</code> to update the
+            cache.  This method of registering packages may be more
+            convenient for automated packaging systems.
+          </p></dd></dl></div><p>
+      Substring matching is supported for <em class="replaceable"><code>M</code></em> in
+      <code class="literal">find-module</code> and for <em class="replaceable"><code>P</code></em> in
+      <code class="literal">list</code>, <code class="literal">describe</code>, and
+      <code class="literal">field</code>, where a <code class="literal">'*'</code> indicates open
+      substring ends (<code class="literal">prefix*</code>, <code class="literal">*suffix</code>,
+      <code class="literal">*infix*</code>). Examples (output omitted):
+    </p><pre class="screen">
+    -- list all regex-related packages
+    ghc-pkg list '*regex*' --ignore-case
+    -- list all string-related packages
+    ghc-pkg list '*string*' --ignore-case
+    -- list OpenGL-related packages
+    ghc-pkg list '*gl*' --ignore-case
+    -- list packages exporting modules in the Data hierarchy
+    ghc-pkg find-module 'Data.*'
+    -- list packages exporting Monad modules
+    ghc-pkg find-module '*Monad*'
+    -- list names and maintainers for all packages
+    ghc-pkg field '*' name,maintainer
+    -- list location of haddock htmls for all packages
+    ghc-pkg field '*' haddock-html
+    -- dump the whole database
+    ghc-pkg describe '*'
+</pre><p>Additionally, the following flags are accepted by
+      <code class="literal">ghc-pkg</code>:</p><div class="variablelist"><dl><dt><span class="term">
+          <code class="option">-f</code> <em class="replaceable"><code>file</code></em>
+          <a class="indexterm" name="idp41473648"></a>
+        , </span><span class="term">
+          <code class="option">-package-db</code> <em class="replaceable"><code>file</code></em>
+          <a class="indexterm" name="idp41475840"></a>
+        </span></dt><dd><p>Adds <em class="replaceable"><code>file</code></em> to the stack of package
+            databases.  Additionally, <em class="replaceable"><code>file</code></em> will
+            also be the database modified by a <code class="literal">register</code>,
+            <code class="literal">unregister</code>, <code class="literal">expose</code> or
+            <code class="literal">hide</code> command, unless it is overridden by a later
+            <code class="option">--package-db</code>, <code class="option">--user</code> or
+            <code class="option">--global</code> option.</p></dd><dt><span class="term">
+          <code class="option">&#8211;&#8211;force</code>
+          <a class="indexterm" name="idp41483680"></a>
+        </span></dt><dd><p>Causes <code class="literal">ghc-pkg</code> to ignore missing
+            dependencies, directories and libraries when registering a package,
+            and just go ahead and add it anyway.  This might be useful if your
+            package installation system needs to add the package to
+            GHC before building and installing the files.</p></dd><dt><span class="term">
+          <code class="option">&#8211;&#8211;global</code><a class="indexterm" name="idp41487440"></a>
+        </span></dt><dd><p>Operate on the global package database (this is the default).
+            This flag affects the <code class="literal">register</code>,
+            <code class="literal">update</code>, <code class="literal">unregister</code>,
+            <code class="literal">expose</code>, and <code class="literal">hide</code>
+            commands.</p></dd><dt><span class="term">
+          <code class="option">&#8211;&#8211;help</code><a class="indexterm" name="idp41493664"></a>
+        , </span><span class="term">
+          <code class="option">-?</code><a class="indexterm" name="idp41495520"></a>
+        </span></dt><dd><p>Outputs the command-line syntax.</p></dd><dt><span class="term">
+          <code class="option">&#8211;&#8211;user</code><a class="indexterm" name="idp41498224"></a>
+        </span></dt><dd><p>Operate on the current user's local package database.
+            This flag affects the <code class="literal">register</code>,
+            <code class="literal">update</code>, <code class="literal">unregister</code>,
+            <code class="literal">expose</code>, and <code class="literal">hide</code>
+            commands.</p></dd><dt><span class="term">
+          <code class="option">-v</code>[<span class="optional"><em class="replaceable"><code>n</code></em></span>]<a class="indexterm" name="idp41504944"></a>
+        , </span><span class="term">
+          <code class="option">--verbose</code>[<span class="optional">=<em class="replaceable"><code>n</code></em></span>]<a class="indexterm" name="idp41507280"></a>
+        </span></dt><dd><p>
+            Control verbosity.  Verbosity levels range from 0-2, where
+            the default is 1, and <code class="option">-v</code> alone selects
+            level 2.
+          </p></dd><dt><span class="term">
+          <code class="option">-V</code><a class="indexterm" name="idp41510784"></a>
+        , </span><span class="term">
+          <code class="option">&#8211;&#8211;version</code><a class="indexterm" name="idp41512304"></a>
+        </span></dt><dd><p>Output the <code class="literal">ghc-pkg</code> version number.</p></dd></dl></div></div><div class="sect2" title="4.9.7. Building a package from Haskell source"><div class="titlepage"><div><div><h3 class="title"><a name="building-packages"></a>4.9.7. Building a package from Haskell source</h3></div></div></div><a class="indexterm" name="idp41516496"></a><p>We don't recommend building packages the hard way.  Instead, use the
+      <a class="ulink" href="../Cabal/index.html" target="_top">Cabal</a> infrastructure
+      if possible.  If your package is particularly complicated or requires a
+      lot of configuration, then you might have to fall back to the low-level
+      mechanisms, so a few hints for those brave souls follow.</p><p>You need to build an "installed package info" file for
+      passing to <code class="literal">ghc-pkg</code> when installing your
+      package.  The contents of this file are described in
+      <a class="xref" href="packages.html#installed-pkg-info" title="4.9.8.  InstalledPackageInfo: a package specification">Section 4.9.8, &#8220;
+      <code class="literal">InstalledPackageInfo</code>: a package specification
+    &#8221;</a>.</p><p>The Haskell code in a package may be built into one or more
+      archive libraries (e.g. <code class="filename">libHSfoo.a</code>), or a
+      single shared object
+      (e.g. <code class="filename">libHSfoo.dll/.so/.dylib</code>).  The
+      restriction to a single shared object is because the package
+      system is used to tell the compiler when it should make an
+      inter-shared-object call rather than an intra-shared-object-call
+      call (inter-shared-object calls require an extra
+      indirection).</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Building a static library is done by using the
+          <code class="literal">ar</code> tool, like so:</p><pre class="screen">ar cqs libHSfoo-1.0.a A.o B.o C.o ...</pre><p>where <code class="filename">A.o</code>,
+            <code class="filename">B.o</code> and so on are the compiled Haskell
+            modules, and <code class="filename">libHSfoo.a</code> is the library you
+            wish to create.  The syntax may differ slightly on your system,
+            so check the documentation if you run into difficulties.</p></li><li class="listitem"><p>To load a package <code class="literal">foo</code>, GHCi can load
+          its <code class="literal">libHSfoo.a</code> library directly, but it
+          can also load a package in the form of a
+          single <code class="literal">HSfoo.o</code> file that has been
+          pre-linked.  Loading the <code class="literal">.o</code> file is
+          slightly quicker, but at the expense of having another copy
+          of the compiled package.  The rule of thumb is that if the
+          modules of the package were compiled
+          with <code class="option">-split-objs</code> then building
+          the <code class="literal">HSfoo.o</code> is worthwhile because it
+          saves time when loading the package into GHCi.
+          Without <code class="option">-split-objs</code>, there is not much
+          difference in load time between the <code class="literal">.o</code>
+          and <code class="literal">.a</code> libraries, so it is better to save
+          the disk space and only keep the <code class="literal">.a</code>
+          around.  In a GHC distribution we
+          provide <code class="literal">.o</code> files for most packages except
+          the GHC package itself.
+        </p><p>The <code class="literal">HSfoo.o</code> file is built by Cabal
+          automatically;
+          use <code class="option">--disable-library-for-ghci</code> to disable
+          it.  To build one manually, the following
+          GNU <span class="command"><strong>ld</strong></span> command can be used:</p><pre class="screen">ld -r &#8211;&#8211;whole-archive -o HSfoo.o libHSfoo.a</pre><p>(replace
+          <code class="literal">&#8211;&#8211;whole-archive</code> with
+          <code class="literal">&#8211;all_load</code> on MacOS X)</p></li><li class="listitem"><p>When building the package as shared library, GHC can be used to
+          perform the link step. This hides some of the details
+          out the underlying linker and provides a common
+          interface to all shared object variants that are supported
+          by GHC (DLLs, ELF DSOs, and Mac OS dylibs). The shared
+          object must be named in specific way for two reasons: (1)
+          the name must contain the GHC compiler version, so that two
+          library variants don't collide that are compiled by
+          different versions of GHC and that therefore are most likely
+          incompatible with respect to calling conventions, (2) it
+          must be different from the static name otherwise we would
+          not be able to control the linker as precisely as necessary
+          to make
+          the <code class="option">-static</code>/<code class="option">-dynamic</code> flags
+          work, see <a class="xref" href="options-phases.html#options-linker" title="4.12.6. Options affecting linking">Section 4.12.6, &#8220;Options affecting linking&#8221;</a>.</p><pre class="screen">ghc -shared libHSfoo-1.0-ghc<em class="replaceable"><code>GHCVersion</code></em>.so A.o B.o C.o</pre><p>Using GHC's version number in the shared object name
+          allows different library versions compiled by different GHC
+          versions to be installed in standard system locations,
+          e.g. under *nix /usr/lib. To obtain the version number of
+          GHC invoke <code class="literal">ghc --numeric-version</code> and use
+          its output in place
+          of <em class="replaceable"><code>GHCVersion</code></em>. See also
+          <a class="xref" href="options-phases.html#options-codegen" title="4.12.5. Options affecting code generation">Section 4.12.5, &#8220;Options affecting code generation&#8221;</a> on how object files must
+          be prepared for shared object linking.</p></li></ul></div><p>To compile a module which is to be part of a new package,
+      use the <code class="literal">-package-name</code> option (<a class="xref" href="packages.html#using-packages" title="4.9.1. Using Packages">Section 4.9.1, &#8220;Using Packages
+  &#8221;</a>).
+      Failure to use the <code class="literal">-package-name</code> option
+      when compiling a package will probably result in disaster, but
+      you will only discover later when you attempt to import modules
+      from the package.  At this point GHC will complain that the
+      package name it was expecting the module to come from is not the
+      same as the package name stored in the <code class="literal">.hi</code>
+      file.</p><p>It is worth noting with shared objects, when each package
+      is built as a single shared object file, since a reference to a shared object costs an extra
+      indirection, intra-package references are cheaper than
+      inter-package references. Of course, this applies to the
+      <code class="filename">main</code> package as well.</p></div><div class="sect2" title="4.9.8.  InstalledPackageInfo: a package specification"><div class="titlepage"><div><div><h3 class="title"><a name="installed-pkg-info"></a>4.9.8. 
+      <code class="literal">InstalledPackageInfo</code>: a package specification
+    </h3></div></div></div><p>A package specification is a Haskell record; in particular, it is the
+      record <a class="ulink" href="../libraries/Cabal-1.16.0/Distribution-InstalledPackageInfo.html#%tInstalledPackageInfo" target="_top">InstalledPackageInfo</a> in the module Distribution.InstalledPackageInfo, which is part of the Cabal package distributed with GHC.</p><p>An <code class="literal">InstalledPackageInfo</code> has a human
+      readable/writable syntax.  The functions
+      <code class="literal">parseInstalledPackageInfo</code> and
+      <code class="literal">showInstalledPackageInfo</code> read and write this syntax
+      respectively.  Here's an example of the
+      <code class="literal">InstalledPackageInfo</code> for the <code class="literal">unix</code> package:</p><pre class="screen">
+$ ghc-pkg describe unix
+name: unix
+version: 2.3.1.0
+id: unix-2.3.1.0-de7803f1a8cd88d2161b29b083c94240
+license: BSD3
+copyright:
+maintainer: libraries@haskell.org
+stability:
+homepage:
+package-url:
+description: This package gives you access to the set of operating system
+             services standardised by POSIX 1003.1b (or the IEEE Portable
+             Operating System Interface for Computing Environments -
+             IEEE Std. 1003.1).
+             .
+             The package is not supported under Windows (except under Cygwin).
+category: System
+author:
+exposed: True
+exposed-modules: System.Posix System.Posix.DynamicLinker.Module
+                 System.Posix.DynamicLinker.Prim System.Posix.Directory
+                 System.Posix.DynamicLinker System.Posix.Env System.Posix.Error
+                 System.Posix.Files System.Posix.IO System.Posix.Process
+                 System.Posix.Process.Internals System.Posix.Resource
+                 System.Posix.Temp System.Posix.Terminal System.Posix.Time
+                 System.Posix.Unistd System.Posix.User System.Posix.Signals
+                 System.Posix.Signals.Exts System.Posix.Semaphore
+                 System.Posix.SharedMem
+hidden-modules:
+trusted: False
+import-dirs: /usr/lib/ghc-6.12.1/unix-2.3.1.0
+library-dirs: /usr/lib/ghc-6.12.1/unix-2.3.1.0
+hs-libraries: HSunix-2.3.1.0
+extra-libraries: rt util dl
+extra-ghci-libraries:
+include-dirs: /usr/lib/ghc-6.12.1/unix-2.3.1.0/include
+includes: HsUnix.h execvpe.h
+depends: base-4.2.0.0-247bb20cde37c3ef4093ee124e04bc1c
+hugs-options:
+cc-options:
+ld-options:
+framework-dirs:
+frameworks:
+haddock-interfaces: /usr/share/doc/ghc/html/libraries/unix/unix.haddock
+haddock-html: /usr/share/doc/ghc/html/libraries/unix
+</pre><p>Here is a brief description of the syntax of this file:</p><p>A package description consists of a number of field/value pairs.  A
+      field starts with the field name in the left-hand column followed by a
+      &#8220;<code class="literal">:</code>&#8221;, and the value continues until the next line that begins in the
+      left-hand column, or the end of file.</p><p>The syntax of the value depends on the field.   The various field
+      types are:</p><div class="variablelist"><dl><dt><span class="term">freeform</span></dt><dd><p>Any arbitrary string, no interpretation or parsing is
+            done.</p></dd><dt><span class="term">string</span></dt><dd><p>A sequence of non-space characters, or a sequence of arbitrary
+            characters surrounded by quotes <code class="literal">"...."</code>.</p></dd><dt><span class="term">string list</span></dt><dd><p>A sequence of strings, separated by commas.  The sequence may
+            be empty.</p></dd></dl></div><p>In addition, there are some fields with special syntax (e.g. package
+      names, version, dependencies).</p><p>The allowed fields, with their types, are:</p><div class="variablelist"><dl><dt><span class="term">
+          <code class="literal">name</code>
+          <a class="indexterm" name="idp41570368"></a>
+        </span></dt><dd><p>The package's name (without the version).</p></dd><dt><span class="term">
+          <code class="literal">id</code>
+          <a class="indexterm" name="idp41574000"></a>
+        </span></dt><dd><p>The package ID.  It is up to you to choose a suitable
+          one.</p></dd><dt><span class="term">
+          <code class="literal">version</code>
+          <a class="indexterm" name="idp41577664"></a>
+        </span></dt><dd><p>The package's version, usually in the form
+            <code class="literal">A.B</code> (any number of components are allowed).</p></dd><dt><span class="term">
+          <code class="literal">license</code>
+          <a class="indexterm" name="idp41582032"></a>
+        </span></dt><dd><p>(string) The type of license under which this package is distributed.
+            This field is a value of the <a class="ulink" href="../libraries/Cabal-1.16.0/Distribution-License.html#t:License" target="_top"><code class="literal">License</code></a> type.</p></dd><dt><span class="term">
+            <code class="literal">license-file</code>
+            <a class="indexterm" name="idp41586928"></a>
+          </span></dt><dd><p>(optional string) The name of a file giving detailed license
+            information for this package.</p></dd><dt><span class="term">
+            <code class="literal">copyright</code>
+            <a class="indexterm" name="idp41590528"></a>
+          </span></dt><dd><p>(optional freeform) The copyright string.</p></dd><dt><span class="term">
+            <code class="literal">maintainer</code>
+            <a class="indexterm" name="idp41594176"></a>
+          </span></dt><dd><p>(optional freeform) The email address of the package's maintainer.</p></dd><dt><span class="term">
+            <code class="literal">stability</code>
+            <a class="indexterm" name="idp41597856"></a>
+          </span></dt><dd><p>(optional freeform) A string describing the stability of the package
+            (eg. stable, provisional or experimental).</p></dd><dt><span class="term">
+            <code class="literal">homepage</code>
+            <a class="indexterm" name="idp41601584"></a>
+          </span></dt><dd><p>(optional freeform) URL of the package's home page.</p></dd><dt><span class="term">
+            <code class="literal">package-url</code>
+            <a class="indexterm" name="idp41605248"></a>
+          </span></dt><dd><p>(optional freeform) URL of a downloadable distribution for this
+            package.  The distribution should be a Cabal package.</p></dd><dt><span class="term">
+            <code class="literal">description</code>
+            <a class="indexterm" name="idp41608992"></a>
+          </span></dt><dd><p>(optional freeform) Description of the package.</p></dd><dt><span class="term">
+            <code class="literal">category</code>
+            <a class="indexterm" name="idp41612640"></a>
+          </span></dt><dd><p>(optional freeform) Which category the package belongs to.  This field
+            is for use in conjunction with a future centralised package
+            distribution framework, tentatively titled Hackage.</p></dd><dt><span class="term">
+            <code class="literal">author</code>
+            <a class="indexterm" name="idp41616448"></a>
+          </span></dt><dd><p>(optional freeform) Author of the package.</p></dd><dt><span class="term">
+            <code class="literal">exposed</code>
+            <a class="indexterm" name="idp41620096"></a>
+          </span></dt><dd><p>(bool) Whether the package is exposed or not.</p></dd><dt><span class="term">
+            <code class="literal">exposed-modules</code>
+            <a class="indexterm" name="idp41623744"></a>
+          </span></dt><dd><p>(string list) modules exposed by this package.</p></dd><dt><span class="term">
+            <code class="literal">hidden-modules</code>
+            <a class="indexterm" name="idp41627392"></a>
+          </span></dt><dd><p>(string list) modules provided by this package,
+            but not exposed to the programmer.  These modules cannot be
+            imported, but they are still subject to the overlapping constraint:
+            no other package in the same program may provide a module of the
+            same name.</p></dd><dt><span class="term">
+            <code class="literal">trusted</code>
+            <a class="indexterm" name="idp41631296"></a>
+          </span></dt><dd><p>(bool) Whether the package is trusted or not.</p></dd><dt><span class="term">
+            <code class="literal">import-dirs</code>
+            <a class="indexterm" name="idp41634944"></a>
+          </span></dt><dd><p>(string list) A list of directories containing interface files
+            (<code class="literal">.hi</code> files) for this package.</p><p>If the package contains profiling libraries, then
+            the interface files for those library modules should have
+            the suffix <code class="literal">.p_hi</code>.  So the package can
+            contain both normal and profiling versions of the same
+            library without conflict (see also
+            <code class="literal">library_dirs</code> below).</p></dd><dt><span class="term">
+            <code class="literal">library-dirs</code>
+            <a class="indexterm" name="idp41641264"></a>
+          </span></dt><dd><p>(string list) A list of directories containing libraries for this
+            package.</p></dd><dt><span class="term">
+            <code class="literal">hs-libraries</code>
+            <a class="indexterm" name="idp41644960"></a>
+          </span></dt><dd><p>(string list) A list of libraries containing Haskell code for this
+            package, with the <code class="literal">.a</code> or
+            <code class="literal">.dll</code> suffix omitted.  When packages are
+            built as libraries, the
+            <code class="literal">lib</code> prefix is also omitted.</p><p>For use with GHCi, each library should have an
+            object file too.  The name of the object file does
+            <span class="emphasis"><em>not</em></span> have a <code class="literal">lib</code>
+            prefix, and has the normal object suffix for your
+            platform.</p><p>For example, if we specify a Haskell library as
+            <code class="filename">HSfoo</code> in the package spec, then the
+            various flavours of library that GHC actually uses will be
+            called:</p><div class="variablelist"><dl><dt><span class="term"><code class="filename">libHSfoo.a</code></span></dt><dd><p>The name of the library on Unix and Windows
+                  (mingw) systems.  Note that we don't support
+                  building dynamic libraries of Haskell code on Unix
+                  systems.</p></dd><dt><span class="term"><code class="filename">HSfoo.dll</code></span></dt><dd><p>The name of the dynamic library on Windows
+                  systems (optional).</p></dd><dt><span class="term"><code class="filename">HSfoo.o</code>, </span><span class="term"><code class="filename">HSfoo.obj</code></span></dt><dd><p>The object version of the library used by
+                  GHCi.</p></dd></dl></div></dd><dt><span class="term">
+            <code class="literal">extra-libraries</code>
+            <a class="indexterm" name="idp41660864"></a>
+          </span></dt><dd><p>(string list) A list of extra libraries for this package.  The
+            difference between <code class="literal">hs-libraries</code> and
+            <code class="literal">extra-libraries</code> is that
+            <code class="literal">hs-libraries</code> normally have several
+            versions, to support profiling, parallel and other build
+            options.  The various versions are given different
+            suffixes to distinguish them, for example the profiling
+            version of the standard prelude library is named
+            <code class="filename">libHSbase_p.a</code>, with the
+            <code class="literal">_p</code> indicating that this is a profiling
+            version.  The suffix is added automatically by GHC for
+            <code class="literal">hs-libraries</code> only, no suffix is added
+            for libraries in
+            <code class="literal">extra-libraries</code>.</p><p>The libraries listed in
+            <code class="literal">extra-libraries</code> may be any libraries
+            supported by your system's linker, including dynamic
+            libraries (<code class="literal">.so</code> on Unix,
+            <code class="literal">.DLL</code> on Windows).</p><p>Also, <code class="literal">extra-libraries</code> are placed
+            on the linker command line after the
+            <code class="literal">hs-libraries</code> for the same package.  If
+            your package has dependencies in the other direction (i.e.
+            <code class="literal">extra-libraries</code> depends on
+            <code class="literal">hs-libraries</code>), and the libraries are
+            static, you might need to make two separate
+            packages.</p></dd><dt><span class="term">
+            <code class="literal">include-dirs</code>
+            <a class="indexterm" name="idp41675456"></a>
+          </span></dt><dd><p>(string list) A list of directories containing C includes for this
+            package.</p></dd><dt><span class="term">
+           <code class="literal">includes</code>
+           <a class="indexterm" name="idp41679152"></a>
+          </span></dt><dd><p>(string list) A list of files to include for via-C compilations
+            using this package.  Typically the include file(s) will
+            contain function prototypes for any C functions used in
+            the package, in case they end up being called as a result
+            of Haskell functions from the package being
+            inlined.</p></dd><dt><span class="term">
+            <code class="literal">depends</code>
+            <a class="indexterm" name="idp41683104"></a>
+          </span></dt><dd><p>(package id list) Packages on which this package
+            depends.</p></dd><dt><span class="term">
+            <code class="literal">hugs-options</code>
+            <a class="indexterm" name="idp41686784"></a>
+          </span></dt><dd><p>(string list) Options to pass to Hugs for this package.</p></dd><dt><span class="term">
+            <code class="literal">cc-options</code>
+            <a class="indexterm" name="idp41690448"></a>
+          </span></dt><dd><p>(string list) Extra arguments to be added to the gcc command line
+            when this package is being used (only for via-C
+            compilations).</p></dd><dt><span class="term">
+            <code class="literal">ld-options</code>
+            <a class="indexterm" name="idp41694208"></a>
+          </span></dt><dd><p>(string list) Extra arguments to be added to the
+            <span class="command"><strong>gcc</strong></span> command line (for linking) when
+            this package is being used.</p></dd><dt><span class="term">
+            <code class="literal">framework-dirs</code>
+            <a class="indexterm" name="idp41698608"></a>
+          </span></dt><dd><p>(string list) On Darwin/MacOS X, a list of directories containing
+            frameworks for this package. This corresponds to the
+            <code class="option">-framework-path</code> option. It is ignored on all other
+            platforms.</p></dd><dt><span class="term">
+            <code class="literal">frameworks</code>
+            <a class="indexterm" name="idp41702816"></a>
+          </span></dt><dd><p>(string list) On Darwin/MacOS X, a list of frameworks to link to. This
+            corresponds to the <code class="option">-framework</code> option. Take a look
+            at Apple's developer documentation to find out what frameworks
+            actually are. This entry is ignored on all other platforms.</p></dd><dt><span class="term">
+            <code class="literal">haddock-interfaces</code>
+            <a class="indexterm" name="idp41707120"></a>
+          </span></dt><dd><p>(string list) A list of filenames containing <a class="ulink" href="http://www.haskell.org/haddock/" target="_top">Haddock</a> interface
+            files (<code class="literal">.haddock</code> files) for this package.</p></dd><dt><span class="term">
+            <code class="literal">haddock-html</code>
+            <a class="indexterm" name="idp41712144"></a>
+          </span></dt><dd><p>(optional string) The directory containing the Haddock-generated HTML
+            for this package.</p></dd></dl></div></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a id="ftn.idp41299136" href="#idp41299136" class="para">8</a>] </sup>it used to in GHC 6.4, but not since
+    6.6</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="options-sanity.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="using-ghc.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="options-optimise.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">4.8. Warnings and sanity-checking </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 4.10. Optimisation (code improvement)</td></tr></table></div></body></html>

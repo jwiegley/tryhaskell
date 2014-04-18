@@ -1,0 +1,105 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>2.3. Loading compiled code</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghci.html" title="Chapter 2. Using GHCi"><link rel="prev" href="loading-source-files.html" title="2.2. Loading source files"><link rel="next" href="interactive-evaluation.html" title="2.4. Interactive evaluation at the prompt"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">2.3. Loading compiled code</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="loading-source-files.html">Prev</a> </td><th width="60%" align="center">Chapter 2. Using GHCi</th><td width="20%" align="right"> <a accesskey="n" href="interactive-evaluation.html">Next</a></td></tr></table><hr></div><div class="sect1" title="2.3. Loading compiled code"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ghci-compiled"></a>2.3. Loading compiled code</h2></div></div></div><a class="indexterm" name="idp37882576"></a><p>When you load a Haskell source module into GHCi, it is
+    normally converted to byte-code and run using the interpreter.
+    However, interpreted code can also run alongside compiled code in
+    GHCi; indeed, normally when GHCi starts, it loads up a compiled
+    copy of the <code class="literal">base</code> package, which contains the
+    <code class="literal">Prelude</code>.</p><p>Why should we want to run compiled code?  Well, compiled
+    code is roughly 10x faster than interpreted code, but takes about
+    2x longer to produce (perhaps longer if optimisation is on).  So
+    it pays to compile the parts of a program that aren't changing
+    very often, and use the interpreter for the code being actively
+    developed.</p><p>When loading up source modules with <code class="literal">:load</code>,
+    GHCi normally looks for any corresponding compiled object files,
+    and will use one in preference to interpreting the source if
+    possible.  For example, suppose we have a 4-module program
+    consisting of modules A, B, C, and D.  Modules B and C both import
+    D only, and A imports both B &amp; C:</p><pre class="screen">
+      A
+     / \
+    B   C
+     \ /
+      D
+</pre><p>We can compile D, then load the whole program, like this:</p><pre class="screen">
+Prelude&gt; :! ghc -c D.hs
+Prelude&gt; :load A
+Compiling B                ( B.hs, interpreted )
+Compiling C                ( C.hs, interpreted )
+Compiling A                ( A.hs, interpreted )
+Ok, modules loaded: A, B, C, D.
+*Main&gt;
+</pre><p>In the messages from the compiler, we see that there is no line
+    for <code class="literal">D</code>. This is because
+    it isn't necessary to compile <code class="literal">D</code>,
+    because the source and everything it depends on
+    is unchanged since the last compilation.</p><p>At any time you can use the command
+    <code class="literal">:show modules</code>
+    to get a list of the modules currently loaded
+    into GHCi:</p><pre class="screen">
+*Main&gt; :show modules
+D                ( D.hs, D.o )
+C                ( C.hs, interpreted )
+B                ( B.hs, interpreted )
+A                ( A.hs, interpreted )
+*Main&gt;</pre><p>If we now modify the source of D (or pretend to: using the Unix
+    command <code class="literal">touch</code> on the source file is handy for
+    this), the compiler will no longer be able to use the object file,
+    because it might be out of date:</p><pre class="screen">
+*Main&gt; :! touch D.hs
+*Main&gt; :reload
+Compiling D                ( D.hs, interpreted )
+Ok, modules loaded: A, B, C, D.
+*Main&gt;
+</pre><p>Note that module D was compiled, but in this instance
+    because its source hadn't really changed, its interface remained
+    the same, and the recompilation checker determined that A, B and C
+    didn't need to be recompiled.</p><p>So let's try compiling one of the other modules:</p><pre class="screen">
+*Main&gt; :! ghc -c C.hs
+*Main&gt; :load A
+Compiling D                ( D.hs, interpreted )
+Compiling B                ( B.hs, interpreted )
+Compiling C                ( C.hs, interpreted )
+Compiling A                ( A.hs, interpreted )
+Ok, modules loaded: A, B, C, D.
+</pre><p>We didn't get the compiled version of C!  What happened?
+    Well, in GHCi a compiled module may only depend on other compiled
+    modules, and in this case C depends on D, which doesn't have an
+    object file, so GHCi also rejected C's object file.  Ok, so let's
+    also compile D:</p><pre class="screen">
+*Main&gt; :! ghc -c D.hs
+*Main&gt; :reload
+Ok, modules loaded: A, B, C, D.
+</pre><p>Nothing happened!  Here's another lesson: newly compiled
+    modules aren't picked up by <code class="literal">:reload</code>, only
+    <code class="literal">:load</code>:</p><pre class="screen">
+*Main&gt; :load A
+Compiling B                ( B.hs, interpreted )
+Compiling A                ( A.hs, interpreted )
+Ok, modules loaded: A, B, C, D.
+</pre><p>The automatic loading of object files can sometimes lead to
+    confusion, because non-exported top-level definitions of a module
+    are only available for use in expressions at the prompt when the
+    module is interpreted (see <a class="xref" href="interactive-evaluation.html#ghci-scope" title="2.4.5. What's really in scope at the prompt?">Section 2.4.5, &#8220;What's really in scope at the prompt?&#8221;</a>).  For
+    this reason, you might sometimes want to force GHCi to load a
+    module using the interpreter.  This can be done by prefixing
+      a <code class="literal">*</code> to the module name or filename when
+      using <code class="literal">:load</code>, for example</p><pre class="screen">
+Prelude&gt; :load *A
+Compiling A                ( A.hs, interpreted )
+*A&gt;
+</pre><p>When the <code class="literal">*</code> is used, GHCi ignores any
+  pre-compiled object code and interprets the module.  If you have
+  already loaded a number of modules as object code and decide that
+  you wanted to interpret one of them, instead of re-loading the whole
+  set you can use <code class="literal">:add *M</code> to specify that you want
+  <code class="literal">M</code> to be interpreted (note that this might cause
+  other modules to be interpreted too, because compiled modules cannot
+  depend on interpreted ones).</p><p>To always compile everything to object code and never use the
+  interpreter, use the <code class="literal">-fobject-code</code> option (see
+  <a class="xref" href="ghci-obj.html" title="2.10. Compiling to object code inside GHCi">Section 2.10, &#8220;Compiling to object code inside GHCi&#8221;</a>).</p><p>HINT: since GHCi will only use a compiled object file if it
+    can be sure that the compiled version is up-to-date, a good technique
+    when working on a large program is to occasionally run
+    <code class="literal">ghc &#8211;&#8211;make</code> to compile the whole project (say
+    before you go for lunch :-), then continue working in the
+    interpreter.  As you modify code, the changed modules will be
+    interpreted, but the rest of the project will remain
+    compiled.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="loading-source-files.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghci.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="interactive-evaluation.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">2.2. Loading source files </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 2.4. Interactive evaluation at the prompt</td></tr></table></div></body></html>

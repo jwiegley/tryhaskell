@@ -1,0 +1,35 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 11. What to do when something goes wrong</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="prev" href="primitive-module.html" title="10.4. Primitive Module"><link rel="next" href="wrong-compilee.html" title="11.2. When your program &#8220;does the wrong thing&#8221;"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 11. What to do when something goes wrong</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="primitive-module.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="wrong-compilee.html">Next</a></td></tr></table><hr></div><div class="chapter" title="Chapter 11. What to do when something goes wrong"><div class="titlepage"><div><div><h2 class="title"><a name="wrong"></a>Chapter 11. What to do when something goes wrong</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="sect1"><a href="wrong.html#wrong-compiler">11.1. When the compiler &#8220;does the wrong thing&#8221;</a></span></dt><dt><span class="sect1"><a href="wrong-compilee.html">11.2. When your program &#8220;does the wrong thing&#8221;</a></span></dt></dl></div><a class="indexterm" name="idp62373984"></a><p>If you still have a problem after consulting this section,
+  then you may have found a <span class="emphasis"><em>bug</em></span>&#8212;please
+  report it!  See <a class="xref" href="bug-reporting.html" title="1.3. Reporting bugs in GHC">Section 1.3, &#8220;Reporting bugs in GHC&#8221;</a> for details on how to
+  report a bug and a list of things we'd like to know about your bug.
+  If in doubt, send a report&#8212;we love mail from irate users
+  :-!</p><p>(<a class="xref" href="bugs-and-infelicities.html#vs-Haskell-defn" title="14.1. Haskell standards vs. Glasgow Haskell: language non-compliance">Section 14.1, &#8220;Haskell standards vs. Glasgow Haskell: language non-compliance
+&#8221;</a>, which describes Glasgow
+  Haskell's shortcomings vs. the Haskell language definition, may
+  also be of interest.)</p><div class="sect1" title="11.1. When the compiler &#8220;does the wrong thing&#8221;"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="wrong-compiler"></a>11.1. When the compiler &#8220;does the wrong thing&#8221;</h2></div></div></div><a class="indexterm" name="idp62378688"></a><a class="indexterm" name="idp62379456"></a><div class="variablelist"><dl><dt><span class="term">&#8220;Help! The compiler crashed (or `panic'd)!&#8221;</span></dt><dd><p>These events are <span class="emphasis"><em>always</em></span> bugs in
+	  the GHC system&#8212;please report them.</p></dd><dt><span class="term">&#8220;This is a terrible error message.&#8221;</span></dt><dd><p>If you think that GHC could have produced a better
+          error message, please report it as a bug.</p></dd><dt><span class="term">&#8220;What about this warning from the C
+	compiler?&#8221;</span></dt><dd><p>For example: &#8220;&#8230;warning: `Foo' declared
+          `static' but never defined.&#8221; Unsightly, but shouldn't
+          be a problem.</p></dd><dt><span class="term">Sensitivity to <code class="filename">.hi</code> interface files:</span></dt><dd><p>GHC is very sensitive about interface files.  For
+          example, if it picks up a non-standard
+          <code class="filename">Prelude.hi</code> file, pretty terrible things
+          will happen.  If you turn on
+          <code class="option">-XNoImplicitPrelude</code><a class="indexterm" name="idp62388944"></a>, the compiler will almost
+          surely die, unless you know what you are doing.</p><p>Furthermore, as sketched below, you may have big
+          problems running programs compiled using unstable
+          interfaces.</p></dd><dt><span class="term">&#8220;I think GHC is producing incorrect code&#8221;:</span></dt><dd><p>Unlikely :-) A useful be-more-paranoid option to give
+          to GHC is
+          <code class="option">-dcore-lint</code><a class="indexterm" name="idp62392320"></a>; this causes a
+          &#8220;lint&#8221; pass to check for errors (notably type
+          errors) after each Core-to-Core transformation pass.  We run
+          with <code class="option">-dcore-lint</code> on all the time; it costs
+          about 5% in compile time.</p></dd><dt><span class="term">&#8220;Why did I get a link error?&#8221;</span></dt><dd><p>If the linker complains about not finding
+          <code class="literal">_&lt;something&gt;_fast</code>,
+          then something is inconsistent: you probably didn't compile
+          modules in the proper dependency order.</p></dd><dt><span class="term">&#8220;Is this line number right?&#8221;</span></dt><dd><p>On this score, GHC usually does pretty well,
+          especially if you &#8220;allow&#8221; it to be off by one or
+          two.  In the case of an instance or class declaration, the
+          line number may only point you to the declaration, not to a
+          specific method.</p><p>Please report line-number errors that you find
+	  particularly unhelpful.</p></dd></dl></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="primitive-module.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="wrong-compilee.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">10.4. Primitive Module </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 11.2. When your program &#8220;does the wrong thing&#8221;</td></tr></table></div></body></html>

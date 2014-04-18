@@ -1,0 +1,832 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>7.12. Other type system extensions</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghc-language-features.html" title="Chapter 7. GHC Language Features"><link rel="prev" href="constraint-kind.html" title="7.11. The Constraint kind"><link rel="next" href="defer-type-errors.html" title="7.13. Deferring type errors to runtime"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">7.12. Other type system extensions</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="constraint-kind.html">Prev</a> </td><th width="60%" align="center">Chapter 7. GHC Language Features</th><td width="20%" align="right"> <a accesskey="n" href="defer-type-errors.html">Next</a></td></tr></table><hr></div><div class="sect1" title="7.12. Other type system extensions"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="other-type-extensions"></a>7.12. Other type system extensions</h2></div></div></div><div class="sect2" title="7.12.1. Explicit universal quantification (forall)"><div class="titlepage"><div><div><h3 class="title"><a name="explicit-foralls"></a>7.12.1. Explicit universal quantification (forall)</h3></div></div></div><p>
+Haskell type signatures are implicitly quantified.  When the language option <code class="option">-XExplicitForAll</code>
+is used, the keyword <code class="literal">forall</code>
+allows us to say exactly what this means.  For example:
+</p><p>
+</p><pre class="programlisting">
+        g :: b -&gt; b
+</pre><p>
+means this:
+</p><pre class="programlisting">
+        g :: forall b. (b -&gt; b)
+</pre><p>
+The two are treated identically.
+</p><p>
+Of course <code class="literal">forall</code> becomes a keyword; you can't use <code class="literal">forall</code> as
+a type variable any more!
+</p></div><div class="sect2" title="7.12.2. The context of a type signature"><div class="titlepage"><div><div><h3 class="title"><a name="flexible-contexts"></a>7.12.2. The context of a type signature</h3></div></div></div><p>
+The <code class="option">-XFlexibleContexts</code> flag lifts the Haskell 98 restriction
+that the type-class constraints in a type signature must have the
+form <span class="emphasis"><em>(class type-variable)</em></span> or
+<span class="emphasis"><em>(class (type-variable type-variable ...))</em></span>.
+With <code class="option">-XFlexibleContexts</code>
+these type signatures are perfectly OK
+</p><pre class="programlisting">
+  g :: Eq [a] =&gt; ...
+  g :: Ord (T a ()) =&gt; ...
+</pre><p>
+The flag <code class="option">-XFlexibleContexts</code> also lifts the corresponding
+restriction on class declarations (<a class="xref" href="type-class-extensions.html#superclass-rules" title="7.6.1.2. The superclasses of a class declaration">Section 7.6.1.2, &#8220;The superclasses of a class declaration&#8221;</a>) and instance declarations
+(<a class="xref" href="type-class-extensions.html#instance-rules" title="7.6.3.2. Relaxed rules for instance contexts">Section 7.6.3.2, &#8220;Relaxed rules for instance contexts&#8221;</a>).
+</p><p>
+GHC imposes the following restrictions on the constraints in a type signature.
+Consider the type:
+
+</p><pre class="programlisting">
+  forall tv1..tvn (c1, ...,cn) =&gt; type
+</pre><p>
+
+(Here, we write the "foralls" explicitly, although the Haskell source
+language omits them; in Haskell 98, all the free type variables of an
+explicit source-language type signature are universally quantified,
+except for the class type variables in a class declaration.  However,
+in GHC, you can give the foralls if you want.  See <a class="xref" href="other-type-extensions.html#explicit-foralls" title="7.12.1. Explicit universal quantification (forall)">Section 7.12.1, &#8220;Explicit universal quantification (forall)&#8221;</a>).
+</p><p>
+
+</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>
+ <span class="emphasis"><em>Each universally quantified type variable
+<code class="literal">tvi</code> must be reachable from <code class="literal">type</code></em></span>.
+
+A type variable <code class="literal">a</code> is "reachable" if it appears
+in the same constraint as either a type variable free in
+<code class="literal">type</code>, or another reachable type variable.
+A value with a type that does not obey
+this reachability restriction cannot be used without introducing
+ambiguity; that is why the type is rejected.
+Here, for example, is an illegal type:
+
+
+</p><pre class="programlisting">
+  forall a. Eq a =&gt; Int
+</pre><p>
+
+
+When a value with this type was used, the constraint <code class="literal">Eq tv</code>
+would be introduced where <code class="literal">tv</code> is a fresh type variable, and
+(in the dictionary-translation implementation) the value would be
+applied to a dictionary for <code class="literal">Eq tv</code>.  The difficulty is that we
+can never know which instance of <code class="literal">Eq</code> to use because we never
+get any more information about <code class="literal">tv</code>.
+</p><p>
+Note
+that the reachability condition is weaker than saying that <code class="literal">a</code> is
+functionally dependent on a type variable free in
+<code class="literal">type</code> (see <a class="xref" href="type-class-extensions.html#functional-dependencies" title="7.6.2. Functional dependencies">Section 7.6.2, &#8220;Functional dependencies
+&#8221;</a>).  The reason for this is there
+might be a "hidden" dependency, in a superclass perhaps.  So
+"reachable" is a conservative approximation to "functionally dependent".
+For example, consider:
+</p><pre class="programlisting">
+  class C a b | a -&gt; b where ...
+  class C a b =&gt; D a b where ...
+  f :: forall a b. D a b =&gt; a -&gt; a
+</pre><p>
+This is fine, because in fact <code class="literal">a</code> does functionally determine <code class="literal">b</code>
+but that is not immediately apparent from <code class="literal">f</code>'s type.
+</p></li><li class="listitem"><p>
+ <span class="emphasis"><em>Every constraint <code class="literal">ci</code> must mention at least one of the
+universally quantified type variables <code class="literal">tvi</code></em></span>.
+
+For example, this type is OK because <code class="literal">C a b</code> mentions the
+universally quantified type variable <code class="literal">b</code>:
+
+
+</p><pre class="programlisting">
+  forall a. C a b =&gt; burble
+</pre><p>
+
+
+The next type is illegal because the constraint <code class="literal">Eq b</code> does not
+mention <code class="literal">a</code>:
+
+
+</p><pre class="programlisting">
+  forall a. Eq b =&gt; burble
+</pre><p>
+
+
+The reason for this restriction is milder than the other one.  The
+excluded types are never useful or necessary (because the offending
+context doesn't need to be witnessed at this point; it can be floated
+out).  Furthermore, floating them out increases sharing. Lastly,
+excluding them is a conservative choice; it leaves a patch of
+territory free in case we need it later.
+
+</p></li></ol></div><p>
+
+</p></div><div class="sect2" title="7.12.3. Implicit parameters"><div class="titlepage"><div><div><h3 class="title"><a name="implicit-parameters"></a>7.12.3. Implicit parameters</h3></div></div></div><p> Implicit parameters are implemented as described in
+"Implicit parameters: dynamic scoping with static types",
+J Lewis, MB Shields, E Meijer, J Launchbury,
+27th ACM Symposium on Principles of Programming Languages (POPL'00),
+Boston, Jan 2000.
+</p><p>(Most of the following, still rather incomplete, documentation is
+due to Jeff Lewis.)</p><p>Implicit parameter support is enabled with the option
+<code class="option">-XImplicitParams</code>.</p><p>
+A variable is called <span class="emphasis"><em>dynamically bound</em></span> when it is bound by the calling
+context of a function and <span class="emphasis"><em>statically bound</em></span> when bound by the callee's
+context. In Haskell, all variables are statically bound. Dynamic
+binding of variables is a notion that goes back to Lisp, but was later
+discarded in more modern incarnations, such as Scheme. Dynamic binding
+can be very confusing in an untyped language, and unfortunately, typed
+languages, in particular Hindley-Milner typed languages like Haskell,
+only support static scoping of variables.
+</p><p>
+However, by a simple extension to the type class system of Haskell, we
+can support dynamic binding. Basically, we express the use of a
+dynamically bound variable as a constraint on the type. These
+constraints lead to types of the form <code class="literal">(?x::t') =&gt; t</code>, which says "this
+function uses a dynamically-bound variable <code class="literal">?x</code>
+of type <code class="literal">t'</code>". For
+example, the following expresses the type of a sort function,
+implicitly parameterized by a comparison function named <code class="literal">cmp</code>.
+</p><pre class="programlisting">
+  sort :: (?cmp :: a -&gt; a -&gt; Bool) =&gt; [a] -&gt; [a]
+</pre><p>
+The dynamic binding constraints are just a new form of predicate in the type class system.
+</p><p>
+An implicit parameter occurs in an expression using the special form <code class="literal">?x</code>,
+where <code class="literal">x</code> is
+any valid identifier (e.g. <code class="literal">ord ?x</code> is a valid expression).
+Use of this construct also introduces a new
+dynamic-binding constraint in the type of the expression.
+For example, the following definition
+shows how we can define an implicitly parameterized sort function in
+terms of an explicitly parameterized <code class="literal">sortBy</code> function:
+</p><pre class="programlisting">
+  sortBy :: (a -&gt; a -&gt; Bool) -&gt; [a] -&gt; [a]
+
+  sort   :: (?cmp :: a -&gt; a -&gt; Bool) =&gt; [a] -&gt; [a]
+  sort    = sortBy ?cmp
+</pre><p>
+</p><div class="sect3" title="7.12.3.1. Implicit-parameter type constraints"><div class="titlepage"><div><div><h4 class="title"><a name="idp53785968"></a>7.12.3.1. Implicit-parameter type constraints</h4></div></div></div><p>
+Dynamic binding constraints behave just like other type class
+constraints in that they are automatically propagated. Thus, when a
+function is used, its implicit parameters are inherited by the
+function that called it. For example, our <code class="literal">sort</code> function might be used
+to pick out the least value in a list:
+</p><pre class="programlisting">
+  least   :: (?cmp :: a -&gt; a -&gt; Bool) =&gt; [a] -&gt; a
+  least xs = head (sort xs)
+</pre><p>
+Without lifting a finger, the <code class="literal">?cmp</code> parameter is
+propagated to become a parameter of <code class="literal">least</code> as well. With explicit
+parameters, the default is that parameters must always be explicit
+propagated. With implicit parameters, the default is to always
+propagate them.
+</p><p>
+An implicit-parameter type constraint differs from other type class constraints in the
+following way: All uses of a particular implicit parameter must have
+the same type. This means that the type of <code class="literal">(?x, ?x)</code>
+is <code class="literal">(?x::a) =&gt; (a,a)</code>, and not
+<code class="literal">(?x::a, ?x::b) =&gt; (a, b)</code>, as would be the case for type
+class constraints.
+</p><p> You can't have an implicit parameter in the context of a class or instance
+declaration.  For example, both these declarations are illegal:
+</p><pre class="programlisting">
+  class (?x::Int) =&gt; C a where ...
+  instance (?x::a) =&gt; Foo [a] where ...
+</pre><p>
+Reason: exactly which implicit parameter you pick up depends on exactly where
+you invoke a function. But the ``invocation'' of instance declarations is done
+behind the scenes by the compiler, so it's hard to figure out exactly where it is done.
+Easiest thing is to outlaw the offending types.</p><p>
+Implicit-parameter constraints do not cause ambiguity.  For example, consider:
+</p><pre class="programlisting">
+   f :: (?x :: [a]) =&gt; Int -&gt; Int
+   f n = n + length ?x
+
+   g :: (Read a, Show a) =&gt; String -&gt; String
+   g s = show (read s)
+</pre><p>
+Here, <code class="literal">g</code> has an ambiguous type, and is rejected, but <code class="literal">f</code>
+is fine.  The binding for <code class="literal">?x</code> at <code class="literal">f</code>'s call site is
+quite unambiguous, and fixes the type <code class="literal">a</code>.
+</p></div><div class="sect3" title="7.12.3.2. Implicit-parameter bindings"><div class="titlepage"><div><div><h4 class="title"><a name="idp53799072"></a>7.12.3.2. Implicit-parameter bindings</h4></div></div></div><p>
+An implicit parameter is <span class="emphasis"><em>bound</em></span> using the standard
+<code class="literal">let</code> or <code class="literal">where</code> binding forms.
+For example, we define the <code class="literal">min</code> function by binding
+<code class="literal">cmp</code>.
+</p><pre class="programlisting">
+  min :: [a] -&gt; a
+  min  = let ?cmp = (&lt;=) in least
+</pre><p>
+</p><p>
+A group of implicit-parameter bindings may occur anywhere a normal group of Haskell
+bindings can occur, except at top level.  That is, they can occur in a <code class="literal">let</code>
+(including in a list comprehension, or do-notation, or pattern guards),
+or a <code class="literal">where</code> clause.
+Note the following points:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+An implicit-parameter binding group must be a
+collection of simple bindings to implicit-style variables (no
+function-style bindings, and no type signatures); these bindings are
+neither polymorphic or recursive.
+</p></li><li class="listitem"><p>
+You may not mix implicit-parameter bindings with ordinary bindings in a
+single <code class="literal">let</code>
+expression; use two nested <code class="literal">let</code>s instead.
+(In the case of <code class="literal">where</code> you are stuck, since you can't nest <code class="literal">where</code> clauses.)
+</p></li><li class="listitem"><p>
+You may put multiple implicit-parameter bindings in a
+single binding group; but they are <span class="emphasis"><em>not</em></span> treated
+as a mutually recursive group (as ordinary <code class="literal">let</code> bindings are).
+Instead they are treated as a non-recursive group, simultaneously binding all the implicit
+parameter.  The bindings are not nested, and may be re-ordered without changing
+the meaning of the program.
+For example, consider:
+</p><pre class="programlisting">
+  f t = let { ?x = t; ?y = ?x+(1::Int) } in ?x + ?y
+</pre><p>
+The use of <code class="literal">?x</code> in the binding for <code class="literal">?y</code> does not "see"
+the binding for <code class="literal">?x</code>, so the type of <code class="literal">f</code> is
+</p><pre class="programlisting">
+  f :: (?x::Int) =&gt; Int -&gt; Int
+</pre><p>
+</p></li></ul></div><p>
+</p></div><div class="sect3" title="7.12.3.3. Implicit parameters and polymorphic recursion"><div class="titlepage"><div><div><h4 class="title"><a name="idp53816320"></a>7.12.3.3. Implicit parameters and polymorphic recursion</h4></div></div></div><p>
+Consider these two definitions:
+</p><pre class="programlisting">
+  len1 :: [a] -&gt; Int
+  len1 xs = let ?acc = 0 in len_acc1 xs
+
+  len_acc1 [] = ?acc
+  len_acc1 (x:xs) = let ?acc = ?acc + (1::Int) in len_acc1 xs
+
+  ------------
+
+  len2 :: [a] -&gt; Int
+  len2 xs = let ?acc = 0 in len_acc2 xs
+
+  len_acc2 :: (?acc :: Int) =&gt; [a] -&gt; Int
+  len_acc2 [] = ?acc
+  len_acc2 (x:xs) = let ?acc = ?acc + (1::Int) in len_acc2 xs
+</pre><p>
+The only difference between the two groups is that in the second group
+<code class="literal">len_acc</code> is given a type signature.
+In the former case, <code class="literal">len_acc1</code> is monomorphic in its own
+right-hand side, so the implicit parameter <code class="literal">?acc</code> is not
+passed to the recursive call.  In the latter case, because <code class="literal">len_acc2</code>
+has a type signature, the recursive call is made to the
+<span class="emphasis"><em>polymorphic</em></span> version, which takes <code class="literal">?acc</code>
+as an implicit parameter.  So we get the following results in GHCi:
+</p><pre class="programlisting">
+  Prog&gt; len1 "hello"
+  0
+  Prog&gt; len2 "hello"
+  5
+</pre><p>
+Adding a type signature dramatically changes the result!  This is a rather
+counter-intuitive phenomenon, worth watching out for.
+</p></div><div class="sect3" title="7.12.3.4. Implicit parameters and monomorphism"><div class="titlepage"><div><div><h4 class="title"><a name="idp53823328"></a>7.12.3.4. Implicit parameters and monomorphism</h4></div></div></div><p>GHC applies the dreaded Monomorphism Restriction (section 4.5.5 of the
+Haskell Report) to implicit parameters.  For example, consider:
+</p><pre class="programlisting">
+ f :: Int -&gt; Int
+  f v = let ?x = 0     in
+        let y = ?x + v in
+        let ?x = 5     in
+        y
+</pre><p>
+Since the binding for <code class="literal">y</code> falls under the Monomorphism
+Restriction it is not generalised, so the type of <code class="literal">y</code> is
+simply <code class="literal">Int</code>, not <code class="literal">(?x::Int) =&gt; Int</code>.
+Hence, <code class="literal">(f 9)</code> returns result <code class="literal">9</code>.
+If you add a type signature for <code class="literal">y</code>, then <code class="literal">y</code>
+will get type <code class="literal">(?x::Int) =&gt; Int</code>, so the occurrence of
+<code class="literal">y</code> in the body of the <code class="literal">let</code> will see the
+inner binding of <code class="literal">?x</code>, so <code class="literal">(f 9)</code> will return
+<code class="literal">14</code>.
+</p></div></div><div class="sect2" title="7.12.4. Explicitly-kinded quantification"><div class="titlepage"><div><div><h3 class="title"><a name="kinding"></a>7.12.4. Explicitly-kinded quantification</h3></div></div></div><p>
+Haskell infers the kind of each type variable.  Sometimes it is nice to be able
+to give the kind explicitly as (machine-checked) documentation,
+just as it is nice to give a type signature for a function.  On some occasions,
+it is essential to do so.  For example, in his paper "Restricted Data Types in Haskell" (Haskell Workshop 1999)
+John Hughes had to define the data type:
+</p><pre class="screen">
+     data Set cxt a = Set [a]
+                    | Unused (cxt a -&gt; ())
+</pre><p>
+The only use for the <code class="literal">Unused</code> constructor was to force the correct
+kind for the type variable <code class="literal">cxt</code>.
+</p><p>
+GHC now instead allows you to specify the kind of a type variable directly, wherever
+a type variable is explicitly bound, with the flag <code class="option">-XKindSignatures</code>.
+</p><p>
+This flag enables kind signatures in the following places:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><code class="literal">data</code> declarations:
+</p><pre class="screen">
+  data Set (cxt :: * -&gt; *) a = Set [a]
+</pre></li><li class="listitem"><p><code class="literal">type</code> declarations:
+</p><pre class="screen">
+  type T (f :: * -&gt; *) = f Int
+</pre></li><li class="listitem"><p><code class="literal">class</code> declarations:
+</p><pre class="screen">
+  class (Eq a) =&gt; C (f :: * -&gt; *) a where ...
+</pre></li><li class="listitem"><p><code class="literal">forall</code>'s in type signatures:
+</p><pre class="screen">
+  f :: forall (cxt :: * -&gt; *). Set cxt Int
+</pre></li></ul></div><p>
+</p><p>
+The parentheses are required.  Some of the spaces are required too, to
+separate the lexemes.  If you write <code class="literal">(f::*-&gt;*)</code> you
+will get a parse error, because "<code class="literal">::*-&gt;*</code>" is a
+single lexeme in Haskell.
+</p><p>
+As part of the same extension, you can put kind annotations in types
+as well.  Thus:
+</p><pre class="screen">
+   f :: (Int :: *) -&gt; Int
+   g :: forall a. a -&gt; (a :: *)
+</pre><p>
+The syntax is
+</p><pre class="screen">
+   atype ::= '(' ctype '::' kind ')
+</pre><p>
+The parentheses are required.
+</p></div><div class="sect2" title="7.12.5. Arbitrary-rank polymorphism"><div class="titlepage"><div><div><h3 class="title"><a name="universal-quantification"></a>7.12.5. Arbitrary-rank polymorphism
+</h3></div></div></div><p>
+GHC's type system supports <span class="emphasis"><em>arbitrary-rank</em></span>
+explicit universal quantification in
+types.
+For example, all the following types are legal:
+</p><pre class="programlisting">
+    f1 :: forall a b. a -&gt; b -&gt; a
+    g1 :: forall a b. (Ord a, Eq  b) =&gt; a -&gt; b -&gt; a
+
+    f2 :: (forall a. a-&gt;a) -&gt; Int -&gt; Int
+    g2 :: (forall a. Eq a =&gt; [a] -&gt; a -&gt; Bool) -&gt; Int -&gt; Int
+
+    f3 :: ((forall a. a-&gt;a) -&gt; Int) -&gt; Bool -&gt; Bool
+
+    f4 :: Int -&gt; (forall a. a -&gt; a)
+</pre><p>
+Here, <code class="literal">f1</code> and <code class="literal">g1</code> are rank-1 types, and
+can be written in standard Haskell (e.g. <code class="literal">f1 :: a-&gt;b-&gt;a</code>).
+The <code class="literal">forall</code> makes explicit the universal quantification that
+is implicitly added by Haskell.
+</p><p>
+The functions <code class="literal">f2</code> and <code class="literal">g2</code> have rank-2 types;
+the <code class="literal">forall</code> is on the left of a function arrow.  As <code class="literal">g2</code>
+shows, the polymorphic type on the left of the function arrow can be overloaded.
+</p><p>
+The function <code class="literal">f3</code> has a rank-3 type;
+it has rank-2 types on the left of a function arrow.
+</p><p>
+GHC has three flags to control higher-rank types:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+ <code class="option">-XPolymorphicComponents</code>: data constructors (only) can have polymorphic argument types.
+</p></li><li class="listitem"><p>
+ <code class="option">-XRank2Types</code>: any function (including data constructors) can have a rank-2 type.
+</p></li><li class="listitem"><p>
+ <code class="option">-XRankNTypes</code>: any function (including data constructors) can have an arbitrary-rank type.
+That is,  you can nest <code class="literal">forall</code>s
+arbitrarily deep in function arrows.
+In particular, a forall-type (also called a "type scheme"),
+including an operational type class context, is legal:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p> On the left or right (see <code class="literal">f4</code>, for example)
+of a function arrow </p></li><li class="listitem"><p> As the argument of a constructor, or type of a field, in a data type declaration. For
+example, any of the <code class="literal">f1,f2,f3,g1,g2</code> above would be valid
+field type signatures.</p></li><li class="listitem"><p> As the type of an implicit parameter </p></li><li class="listitem"><p> In a pattern type signature (see <a class="xref" href="other-type-extensions.html#scoped-type-variables" title="7.12.7. Lexically scoped type variables">Section 7.12.7, &#8220;Lexically scoped type variables
+&#8221;</a>) </p></li></ul></div><p>
+</p></li></ul></div><p>
+</p><div class="sect3" title="7.12.5.1. Examples"><div class="titlepage"><div><div><h4 class="title"><a name="univ"></a>7.12.5.1. Examples
+</h4></div></div></div><p>
+In a <code class="literal">data</code> or <code class="literal">newtype</code> declaration one can quantify
+the types of the constructor arguments.  Here are several examples:
+</p><p>
+
+</p><pre class="programlisting">
+data T a = T1 (forall b. b -&gt; b -&gt; b) a
+
+data MonadT m = MkMonad { return :: forall a. a -&gt; m a,
+                          bind   :: forall a b. m a -&gt; (a -&gt; m b) -&gt; m b
+                        }
+
+newtype Swizzle = MkSwizzle (Ord a =&gt; [a] -&gt; [a])
+</pre><p>
+
+</p><p>
+The constructors have rank-2 types:
+</p><p>
+
+</p><pre class="programlisting">
+T1 :: forall a. (forall b. b -&gt; b -&gt; b) -&gt; a -&gt; T a
+MkMonad :: forall m. (forall a. a -&gt; m a)
+                  -&gt; (forall a b. m a -&gt; (a -&gt; m b) -&gt; m b)
+                  -&gt; MonadT m
+MkSwizzle :: (Ord a =&gt; [a] -&gt; [a]) -&gt; Swizzle
+</pre><p>
+
+</p><p>
+Notice that you don't need to use a <code class="literal">forall</code> if there's an
+explicit context.  For example in the first argument of the
+constructor <code class="function">MkSwizzle</code>, an implicit "<code class="literal">forall a.</code>" is
+prefixed to the argument type.  The implicit <code class="literal">forall</code>
+quantifies all type variables that are not already in scope, and are
+mentioned in the type quantified over.
+</p><p>
+As for type signatures, implicit quantification happens for non-overloaded
+types too.  So if you write this:
+
+</p><pre class="programlisting">
+  data T a = MkT (Either a b) (b -&gt; b)
+</pre><p>
+
+it's just as if you had written this:
+
+</p><pre class="programlisting">
+  data T a = MkT (forall b. Either a b) (forall b. b -&gt; b)
+</pre><p>
+
+That is, since the type variable <code class="literal">b</code> isn't in scope, it's
+implicitly universally quantified.  (Arguably, it would be better
+to <span class="emphasis"><em>require</em></span> explicit quantification on constructor arguments
+where that is what is wanted.  Feedback welcomed.)
+</p><p>
+You construct values of types <code class="literal">T1, MonadT, Swizzle</code> by applying
+the constructor to suitable values, just as usual.  For example,
+</p><p>
+
+</p><pre class="programlisting">
+    a1 :: T Int
+    a1 = T1 (\xy-&gt;x) 3
+
+    a2, a3 :: Swizzle
+    a2 = MkSwizzle sort
+    a3 = MkSwizzle reverse
+
+    a4 :: MonadT Maybe
+    a4 = let r x = Just x
+	     b m k = case m of
+		       Just y -&gt; k y
+		       Nothing -&gt; Nothing
+         in
+         MkMonad r b
+
+    mkTs :: (forall b. b -&gt; b -&gt; b) -&gt; a -&gt; [T a]
+    mkTs f x y = [T1 f x, T1 f y]
+</pre><p>
+
+</p><p>
+The type of the argument can, as usual, be more general than the type
+required, as <code class="literal">(MkSwizzle reverse)</code> shows.  (<code class="function">reverse</code>
+does not need the <code class="literal">Ord</code> constraint.)
+</p><p>
+When you use pattern matching, the bound variables may now have
+polymorphic types.  For example:
+</p><p>
+
+</p><pre class="programlisting">
+    f :: T a -&gt; a -&gt; (a, Char)
+    f (T1 w k) x = (w k x, w 'c' 'd')
+
+    g :: (Ord a, Ord b) =&gt; Swizzle -&gt; [a] -&gt; (a -&gt; b) -&gt; [b]
+    g (MkSwizzle s) xs f = s (map f (s xs))
+
+    h :: MonadT m -&gt; [m a] -&gt; m [a]
+    h m [] = return m []
+    h m (x:xs) = bind m x          $ \y -&gt;
+                 bind m (h m xs)   $ \ys -&gt;
+                 return m (y:ys)
+</pre><p>
+
+</p><p>
+In the function <code class="function">h</code> we use the record selectors <code class="literal">return</code>
+and <code class="literal">bind</code> to extract the polymorphic bind and return functions
+from the <code class="literal">MonadT</code> data structure, rather than using pattern
+matching.
+</p></div><div class="sect3" title="7.12.5.2. Type inference"><div class="titlepage"><div><div><h4 class="title"><a name="idp53893952"></a>7.12.5.2. Type inference</h4></div></div></div><p>
+In general, type inference for arbitrary-rank types is undecidable.
+GHC uses an algorithm proposed by Odersky and Laufer ("Putting type annotations to work", POPL'96)
+to get a decidable algorithm by requiring some help from the programmer.
+We do not yet have a formal specification of "some help" but the rule is this:
+</p><p>
+<span class="emphasis"><em>For a lambda-bound or case-bound variable, x, either the programmer
+provides an explicit polymorphic type for x, or GHC's type inference will assume
+that x's type has no foralls in it</em></span>.
+</p><p>
+What does it mean to "provide" an explicit type for x?  You can do that by
+giving a type signature for x directly, using a pattern type signature
+(<a class="xref" href="other-type-extensions.html#scoped-type-variables" title="7.12.7. Lexically scoped type variables">Section 7.12.7, &#8220;Lexically scoped type variables
+&#8221;</a>), thus:
+</p><pre class="programlisting">
+     \ f :: (forall a. a-&gt;a) -&gt; (f True, f 'c')
+</pre><p>
+Alternatively, you can give a type signature to the enclosing
+context, which GHC can "push down" to find the type for the variable:
+</p><pre class="programlisting">
+     (\ f -&gt; (f True, f 'c')) :: (forall a. a-&gt;a) -&gt; (Bool,Char)
+</pre><p>
+Here the type signature on the expression can be pushed inwards
+to give a type signature for f.  Similarly, and more commonly,
+one can give a type signature for the function itself:
+</p><pre class="programlisting">
+     h :: (forall a. a-&gt;a) -&gt; (Bool,Char)
+     h f = (f True, f 'c')
+</pre><p>
+You don't need to give a type signature if the lambda bound variable
+is a constructor argument.  Here is an example we saw earlier:
+</p><pre class="programlisting">
+    f :: T a -&gt; a -&gt; (a, Char)
+    f (T1 w k) x = (w k x, w 'c' 'd')
+</pre><p>
+Here we do not need to give a type signature to <code class="literal">w</code>, because
+it is an argument of constructor <code class="literal">T1</code> and that tells GHC all
+it needs to know.
+</p></div><div class="sect3" title="7.12.5.3. Implicit quantification"><div class="titlepage"><div><div><h4 class="title"><a name="implicit-quant"></a>7.12.5.3. Implicit quantification</h4></div></div></div><p>
+GHC performs implicit quantification as follows.  <span class="emphasis"><em>At the top level (only) of
+user-written types, if and only if there is no explicit <code class="literal">forall</code>,
+GHC finds all the type variables mentioned in the type that are not already
+in scope, and universally quantifies them.</em></span>  For example, the following pairs are
+equivalent:
+</p><pre class="programlisting">
+  f :: a -&gt; a
+  f :: forall a. a -&gt; a
+
+  g (x::a) = let
+                h :: a -&gt; b -&gt; b
+                h x y = y
+             in ...
+  g (x::a) = let
+                h :: forall b. a -&gt; b -&gt; b
+                h x y = y
+             in ...
+</pre><p>
+</p><p>
+Notice that GHC does <span class="emphasis"><em>not</em></span> find the innermost possible quantification
+point.  For example:
+</p><pre class="programlisting">
+  f :: (a -&gt; a) -&gt; Int
+           -- MEANS
+  f :: forall a. (a -&gt; a) -&gt; Int
+           -- NOT
+  f :: (forall a. a -&gt; a) -&gt; Int
+
+
+  g :: (Ord a =&gt; a -&gt; a) -&gt; Int
+           -- MEANS the illegal type
+  g :: forall a. (Ord a =&gt; a -&gt; a) -&gt; Int
+           -- NOT
+  g :: (forall a. Ord a =&gt; a -&gt; a) -&gt; Int
+</pre><p>
+The latter produces an illegal type, which you might think is silly,
+but at least the rule is simple.  If you want the latter type, you
+can write your for-alls explicitly.  Indeed, doing so is strongly advised
+for rank-2 types.
+</p></div></div><div class="sect2" title="7.12.6. Impredicative polymorphism"><div class="titlepage"><div><div><h3 class="title"><a name="impredicative-polymorphism"></a>7.12.6. Impredicative polymorphism
+</h3></div></div></div><p>GHC supports <span class="emphasis"><em>impredicative polymorphism</em></span>,
+enabled with <code class="option">-XImpredicativeTypes</code>.
+This means
+that you can call a polymorphic function at a polymorphic type, and
+parameterise data structures over polymorphic types.  For example:
+</p><pre class="programlisting">
+  f :: Maybe (forall a. [a] -&gt; [a]) -&gt; Maybe ([Int], [Char])
+  f (Just g) = Just (g [3], g "hello")
+  f Nothing  = Nothing
+</pre><p>
+Notice here that the <code class="literal">Maybe</code> type is parameterised by the
+<span class="emphasis"><em>polymorphic</em></span> type <code class="literal">(forall a. [a] -&gt;
+[a])</code>.
+</p><p>The technical details of this extension are described in the paper
+<a class="ulink" href="http://research.microsoft.com/%7Esimonpj/papers/boxy/" target="_top">Boxy types:
+type inference for higher-rank types and impredicativity</a>,
+which appeared at ICFP 2006.
+</p></div><div class="sect2" title="7.12.7. Lexically scoped type variables"><div class="titlepage"><div><div><h3 class="title"><a name="scoped-type-variables"></a>7.12.7. Lexically scoped type variables
+</h3></div></div></div><p>
+GHC supports <span class="emphasis"><em>lexically scoped type variables</em></span>, without
+which some type signatures are simply impossible to write. For example:
+</p><pre class="programlisting">
+f :: forall a. [a] -&gt; [a]
+f xs = ys ++ ys
+     where
+       ys :: [a]
+       ys = reverse xs
+</pre><p>
+The type signature for <code class="literal">f</code> brings the type variable <code class="literal">a</code> into scope,
+because of the explicit <code class="literal">forall</code> (<a class="xref" href="other-type-extensions.html#decl-type-sigs" title="7.12.7.2. Declaration type signatures">Section 7.12.7.2, &#8220;Declaration type signatures&#8221;</a>).
+The type variables bound by a <code class="literal">forall</code> scope over
+the entire definition of the accompanying value declaration.
+In this example, the type variable <code class="literal">a</code> scopes over the whole
+definition of <code class="literal">f</code>, including over
+the type signature for <code class="varname">ys</code>.
+In Haskell 98 it is not possible to declare
+a type for <code class="varname">ys</code>; a major benefit of scoped type variables is that
+it becomes possible to do so.
+</p><p>Lexically-scoped type variables are enabled by
+<code class="option">-XScopedTypeVariables</code>.  This flag implies <code class="option">-XRelaxedPolyRec</code>.
+</p><p>Note: GHC 6.6 contains substantial changes to the way that scoped type
+variables work, compared to earlier releases.  Read this section
+carefully!</p><div class="sect3" title="7.12.7.1. Overview"><div class="titlepage"><div><div><h4 class="title"><a name="idp53924976"></a>7.12.7.1. Overview</h4></div></div></div><p>The design follows the following principles
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>A scoped type variable stands for a type <span class="emphasis"><em>variable</em></span>, and not for
+a <span class="emphasis"><em>type</em></span>. (This is a change from GHC's earlier
+design.)</p></li><li class="listitem"><p>Furthermore, distinct lexical type variables stand for distinct
+type variables.  This means that every programmer-written type signature
+(including one that contains free scoped type variables) denotes a
+<span class="emphasis"><em>rigid</em></span> type; that is, the type is fully known to the type
+checker, and no inference is involved.</p></li><li class="listitem"><p>Lexical type variables may be alpha-renamed freely, without
+changing the program.</p></li></ul></div><p>
+</p><p>
+A <span class="emphasis"><em>lexically scoped type variable</em></span> can be bound by:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>A declaration type signature (<a class="xref" href="other-type-extensions.html#decl-type-sigs" title="7.12.7.2. Declaration type signatures">Section 7.12.7.2, &#8220;Declaration type signatures&#8221;</a>)</p></li><li class="listitem"><p>An expression type signature (<a class="xref" href="other-type-extensions.html#exp-type-sigs" title="7.12.7.3. Expression type signatures">Section 7.12.7.3, &#8220;Expression type signatures&#8221;</a>)</p></li><li class="listitem"><p>A pattern type signature (<a class="xref" href="other-type-extensions.html#pattern-type-sigs" title="7.12.7.4. Pattern type signatures">Section 7.12.7.4, &#8220;Pattern type signatures&#8221;</a>)</p></li><li class="listitem"><p>Class and instance declarations (<a class="xref" href="other-type-extensions.html#cls-inst-scoped-tyvars" title="7.12.7.5. Class and instance declarations">Section 7.12.7.5, &#8220;Class and instance declarations&#8221;</a>)</p></li></ul></div><p>
+</p><p>
+In Haskell, a programmer-written type signature is implicitly quantified over
+its free type variables (<a class="ulink" href="http://www.haskell.org/onlinereport/decls.html#sect4.1.2" target="_top">Section
+4.1.2</a>
+of the Haskell Report).
+Lexically scoped type variables affect this implicit quantification rules
+as follows: any type variable that is in scope is <span class="emphasis"><em>not</em></span> universally
+quantified. For example, if type variable <code class="literal">a</code> is in scope,
+then
+</p><pre class="programlisting">
+  (e :: a -&gt; a)     means     (e :: a -&gt; a)
+  (e :: b -&gt; b)     means     (e :: forall b. b-&gt;b)
+  (e :: a -&gt; b)     means     (e :: forall b. a-&gt;b)
+</pre><p>
+</p></div><div class="sect3" title="7.12.7.2. Declaration type signatures"><div class="titlepage"><div><div><h4 class="title"><a name="decl-type-sigs"></a>7.12.7.2. Declaration type signatures</h4></div></div></div><p>A declaration type signature that has <span class="emphasis"><em>explicit</em></span>
+quantification (using <code class="literal">forall</code>) brings into scope the
+explicitly-quantified
+type variables, in the definition of the named function.  For example:
+</p><pre class="programlisting">
+  f :: forall a. [a] -&gt; [a]
+  f (x:xs) = xs ++ [ x :: a ]
+</pre><p>
+The "<code class="literal">forall a</code>" brings "<code class="literal">a</code>" into scope in
+the definition of "<code class="literal">f</code>".
+</p><p>This only happens if:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p> The quantification in <code class="literal">f</code>'s type
+signature is explicit.  For example:
+</p><pre class="programlisting">
+  g :: [a] -&gt; [a]
+  g (x:xs) = xs ++ [ x :: a ]
+</pre><p>
+This program will be rejected, because "<code class="literal">a</code>" does not scope
+over the definition of "<code class="literal">g</code>", so "<code class="literal">x::a</code>"
+means "<code class="literal">x::forall a. a</code>" by Haskell's usual implicit
+quantification rules.
+</p></li><li class="listitem"><p> The signature gives a type for a function binding or a bare variable binding,
+not a pattern binding.
+For example:
+</p><pre class="programlisting">
+  f1 :: forall a. [a] -&gt; [a]
+  f1 (x:xs) = xs ++ [ x :: a ]   -- OK
+
+  f2 :: forall a. [a] -&gt; [a]
+  f2 = \(x:xs) -&gt; xs ++ [ x :: a ]   -- OK
+
+  f3 :: forall a. [a] -&gt; [a]
+  Just f3 = Just (\(x:xs) -&gt; xs ++ [ x :: a ])   -- Not OK!
+</pre><p>
+The binding for <code class="literal">f3</code> is a pattern binding, and so its type signature
+does not bring <code class="literal">a</code> into scope.   However <code class="literal">f1</code> is a
+function binding, and <code class="literal">f2</code> binds a bare variable; in both cases
+the type signature brings <code class="literal">a</code> into scope.
+</p></li></ul></div><p>
+</p></div><div class="sect3" title="7.12.7.3. Expression type signatures"><div class="titlepage"><div><div><h4 class="title"><a name="exp-type-sigs"></a>7.12.7.3. Expression type signatures</h4></div></div></div><p>An expression type signature that has <span class="emphasis"><em>explicit</em></span>
+quantification (using <code class="literal">forall</code>) brings into scope the
+explicitly-quantified
+type variables, in the annotated expression.  For example:
+</p><pre class="programlisting">
+  f = runST ( (op &gt;&gt;= \(x :: STRef s Int) -&gt; g x) :: forall s. ST s Bool )
+</pre><p>
+Here, the type signature <code class="literal">forall s. ST s Bool</code> brings the
+type variable <code class="literal">s</code> into scope, in the annotated expression
+<code class="literal">(op &gt;&gt;= \(x :: STRef s Int) -&gt; g x)</code>.
+</p></div><div class="sect3" title="7.12.7.4. Pattern type signatures"><div class="titlepage"><div><div><h4 class="title"><a name="pattern-type-sigs"></a>7.12.7.4. Pattern type signatures</h4></div></div></div><p>
+A type signature may occur in any pattern; this is a <span class="emphasis"><em>pattern type
+signature</em></span>.
+For example:
+</p><pre class="programlisting">
+  -- f and g assume that 'a' is already in scope
+  f = \(x::Int, y::a) -&gt; x
+  g (x::a) = x
+  h ((x,y) :: (Int,Bool)) = (y,x)
+</pre><p>
+In the case where all the type variables in the pattern type signature are
+already in scope (i.e. bound by the enclosing context), matters are simple: the
+signature simply constrains the type of the pattern in the obvious way.
+</p><p>
+Unlike expression and declaration type signatures, pattern type signatures are not implicitly generalised.
+The pattern in a <span class="emphasis"><em>pattern binding</em></span> may only mention type variables
+that are already in scope.  For example:
+</p><pre class="programlisting">
+  f :: forall a. [a] -&gt; (Int, [a])
+  f xs = (n, zs)
+    where
+      (ys::[a], n) = (reverse xs, length xs) -- OK
+      zs::[a] = xs ++ ys                     -- OK
+
+      Just (v::b) = ...  -- Not OK; b is not in scope
+</pre><p>
+Here, the pattern signatures for <code class="literal">ys</code> and <code class="literal">zs</code>
+are fine, but the one for <code class="literal">v</code> is not because <code class="literal">b</code> is
+not in scope.
+</p><p>
+However, in all patterns <span class="emphasis"><em>other</em></span> than pattern bindings, a pattern
+type signature may mention a type variable that is not in scope; in this case,
+<span class="emphasis"><em>the signature brings that type variable into scope</em></span>.
+This is particularly important for existential data constructors.  For example:
+</p><pre class="programlisting">
+  data T = forall a. MkT [a]
+
+  k :: T -&gt; T
+  k (MkT [t::a]) = MkT t3
+                 where
+                   t3::[a] = [t,t,t]
+</pre><p>
+Here, the pattern type signature <code class="literal">(t::a)</code> mentions a lexical type
+variable that is not already in scope.  Indeed, it <span class="emphasis"><em>cannot</em></span> already be in scope,
+because it is bound by the pattern match.  GHC's rule is that in this situation
+(and only then), a pattern type signature can mention a type variable that is
+not already in scope; the effect is to bring it into scope, standing for the
+existentially-bound type variable.
+</p><p>
+When a pattern type signature binds a type variable in this way, GHC insists that the
+type variable is bound to a <span class="emphasis"><em>rigid</em></span>, or fully-known, type variable.
+This means that any user-written type signature always stands for a completely known type.
+</p><p>
+If all this seems a little odd, we think so too.  But we must have
+<span class="emphasis"><em>some</em></span> way to bring such type variables into scope, else we
+could not name existentially-bound type variables in subsequent type signatures.
+</p><p>
+This is (now) the <span class="emphasis"><em>only</em></span> situation in which a pattern type
+signature is allowed to mention a lexical variable that is not already in
+scope.
+For example, both <code class="literal">f</code> and <code class="literal">g</code> would be
+illegal if <code class="literal">a</code> was not already in scope.
+</p></div><div class="sect3" title="7.12.7.5. Class and instance declarations"><div class="titlepage"><div><div><h4 class="title"><a name="cls-inst-scoped-tyvars"></a>7.12.7.5. Class and instance declarations</h4></div></div></div><p>
+
+The type variables in the head of a <code class="literal">class</code> or <code class="literal">instance</code> declaration
+scope over the methods defined in the <code class="literal">where</code> part.  For example:
+
+
+</p><pre class="programlisting">
+  class C a where
+    op :: [a] -&gt; a
+
+    op xs = let ys::[a]
+                ys = reverse xs
+            in
+            head ys
+</pre><p>
+</p></div></div><div class="sect2" title="7.12.8. Generalised typing of mutually recursive bindings"><div class="titlepage"><div><div><h3 class="title"><a name="typing-binds"></a>7.12.8. Generalised typing of mutually recursive bindings</h3></div></div></div><p>
+The Haskell Report specifies that a group of bindings (at top level, or in a
+<code class="literal">let</code> or <code class="literal">where</code>) should be sorted into
+strongly-connected components, and then type-checked in dependency order
+(<a class="ulink" href="http://www.haskell.org/onlinereport/decls.html#sect4.5.1" target="_top">Haskell
+Report, Section 4.5.1</a>).
+As each group is type-checked, any binders of the group that
+have
+an explicit type signature are put in the type environment with the specified
+polymorphic type,
+and all others are monomorphic until the group is generalised
+(<a class="ulink" href="http://www.haskell.org/onlinereport/decls.html#sect4.5.2" target="_top">Haskell Report, Section 4.5.2</a>).
+</p><p>Following a suggestion of Mark Jones, in his paper
+<a class="ulink" href="http://citeseer.ist.psu.edu/424440.html" target="_top">Typing Haskell in
+Haskell</a>,
+GHC implements a more general scheme.  If <code class="option">-XRelaxedPolyRec</code> is
+specified:
+<span class="emphasis"><em>the dependency analysis ignores references to variables that have an explicit
+type signature</em></span>.
+As a result of this refined dependency analysis, the dependency groups are smaller, and more bindings will
+typecheck.  For example, consider:
+</p><pre class="programlisting">
+  f :: Eq a =&gt; a -&gt; Bool
+  f x = (x == x) || g True || g "Yes"
+
+  g y = (y &lt;= y) || f True
+</pre><p>
+This is rejected by Haskell 98, but under Jones's scheme the definition for
+<code class="literal">g</code> is typechecked first, separately from that for
+<code class="literal">f</code>,
+because the reference to <code class="literal">f</code> in <code class="literal">g</code>'s right
+hand side is ignored by the dependency analysis.  Then <code class="literal">g</code>'s
+type is generalised, to get
+</p><pre class="programlisting">
+  g :: Ord a =&gt; a -&gt; Bool
+</pre><p>
+Now, the definition for <code class="literal">f</code> is typechecked, with this type for
+<code class="literal">g</code> in the type environment.
+</p><p>
+The same refined dependency analysis also allows the type signatures of
+mutually-recursive functions to have different contexts, something that is illegal in
+Haskell 98 (Section 4.5.2, last sentence).  With
+<code class="option">-XRelaxedPolyRec</code>
+GHC only insists that the type signatures of a <span class="emphasis"><em>refined</em></span> group have identical
+type signatures; in practice this means that only variables bound by the same
+pattern binding must have the same context.  For example, this is fine:
+</p><pre class="programlisting">
+  f :: Eq a =&gt; a -&gt; Bool
+  f x = (x == x) || g True
+
+  g :: Ord a =&gt; a -&gt; Bool
+  g y = (y &lt;= y) || f True
+</pre><p>
+</p></div><div class="sect2" title="7.12.9. Monomorphic local bindings"><div class="titlepage"><div><div><h3 class="title"><a name="mono-local-binds"></a>7.12.9. Monomorphic local bindings</h3></div></div></div><p>
+We are actively thinking of simplifying GHC's type system, by <span class="emphasis"><em>not generalising local bindings</em></span>.
+The rationale is described in the paper
+<a class="ulink" href="http://research.microsoft.com/~simonpj/papers/constraints/index.htm" target="_top">Let should not be generalised</a>.
+</p><p>
+The experimental new behaviour is enabled by the flag <code class="option">-XMonoLocalBinds</code>.  The effect is
+that local (that is, non-top-level) bindings without a type signature are not generalised at all.  You can
+think of it as an extreme (but much more predictable) version of the Monomorphism Restriction.
+If you supply a type signature, then the flag has no effect.
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="constraint-kind.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghc-language-features.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="defer-type-errors.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.11. The <code class="literal">Constraint</code> kind </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 7.13. Deferring type errors to runtime</td></tr></table></div></body></html>

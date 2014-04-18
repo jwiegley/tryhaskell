@@ -1,0 +1,300 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>7.5. Extensions to the "deriving" mechanism</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghc-language-features.html" title="Chapter 7. GHC Language Features"><link rel="prev" href="data-type-extensions.html" title="7.4. Extensions to data types and type synonyms"><link rel="next" href="type-class-extensions.html" title="7.6. Class and instances declarations"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">7.5. Extensions to the "deriving" mechanism</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="data-type-extensions.html">Prev</a> </td><th width="60%" align="center">Chapter 7. GHC Language Features</th><td width="20%" align="right"> <a accesskey="n" href="type-class-extensions.html">Next</a></td></tr></table><hr></div><div class="sect1" title='7.5. Extensions to the "deriving" mechanism'><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="deriving"></a>7.5. Extensions to the "deriving" mechanism</h2></div></div></div><div class="sect2" title="7.5.1. Inferred context for deriving clauses"><div class="titlepage"><div><div><h3 class="title"><a name="deriving-inferred"></a>7.5.1. Inferred context for deriving clauses</h3></div></div></div><p>
+The Haskell Report is vague about exactly when a <code class="literal">deriving</code> clause is
+legal.  For example:
+</p><pre class="programlisting">
+  data T0 f a = MkT0 a         deriving( Eq )
+  data T1 f a = MkT1 (f a)     deriving( Eq )
+  data T2 f a = MkT2 (f (f a)) deriving( Eq )
+</pre><p>
+The natural generated <code class="literal">Eq</code> code would result in these instance declarations:
+</p><pre class="programlisting">
+  instance Eq a         =&gt; Eq (T0 f a) where ...
+  instance Eq (f a)     =&gt; Eq (T1 f a) where ...
+  instance Eq (f (f a)) =&gt; Eq (T2 f a) where ...
+</pre><p>
+The first of these is obviously fine. The second is still fine, although less obviously.
+The third is not Haskell 98, and risks losing termination of instances.
+</p><p>
+GHC takes a conservative position: it accepts the first two, but not the third.  The  rule is this:
+each constraint in the inferred instance context must consist only of type variables,
+with no repetitions.
+</p><p>
+This rule is applied regardless of flags.  If you want a more exotic context, you can write
+it yourself, using the <a class="link" href="deriving.html#stand-alone-deriving" title="7.5.2. Stand-alone deriving declarations">standalone deriving mechanism</a>.
+</p></div><div class="sect2" title="7.5.2. Stand-alone deriving declarations"><div class="titlepage"><div><div><h3 class="title"><a name="stand-alone-deriving"></a>7.5.2. Stand-alone deriving declarations</h3></div></div></div><p>
+GHC now allows stand-alone <code class="literal">deriving</code> declarations, enabled by <code class="literal">-XStandaloneDeriving</code>:
+</p><pre class="programlisting">
+  data Foo a = Bar a | Baz String
+
+  deriving instance Eq a =&gt; Eq (Foo a)
+</pre><p>
+The syntax is identical to that of an ordinary instance declaration apart from (a) the keyword
+<code class="literal">deriving</code>, and (b) the absence of the <code class="literal">where</code> part.
+Note the following points:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+You must supply an explicit context (in the example the context is <code class="literal">(Eq a)</code>),
+exactly as you would in an ordinary instance declaration.
+(In contrast, in a <code class="literal">deriving</code> clause
+attached to a data type declaration, the context is inferred.)
+</p></li><li class="listitem"><p>
+A <code class="literal">deriving instance</code> declaration
+must obey the same rules concerning form and termination as ordinary instance declarations,
+controlled by the same flags; see <a class="xref" href="type-class-extensions.html#instance-decls" title="7.6.3. Instance declarations">Section 7.6.3, &#8220;Instance declarations&#8221;</a>.
+</p></li><li class="listitem"><p>
+Unlike a <code class="literal">deriving</code>
+declaration attached to a <code class="literal">data</code> declaration, the instance can be more specific
+than the data type (assuming you also use
+<code class="literal">-XFlexibleInstances</code>, <a class="xref" href="type-class-extensions.html#instance-rules" title="7.6.3.2. Relaxed rules for instance contexts">Section 7.6.3.2, &#8220;Relaxed rules for instance contexts&#8221;</a>).  Consider
+for example
+</p><pre class="programlisting">
+  data Foo a = Bar a | Baz String
+
+  deriving instance Eq a =&gt; Eq (Foo [a])
+  deriving instance Eq a =&gt; Eq (Foo (Maybe a))
+</pre><p>
+This will generate a derived instance for <code class="literal">(Foo [a])</code> and <code class="literal">(Foo (Maybe a))</code>,
+but other types such as <code class="literal">(Foo (Int,Bool))</code> will not be an instance of <code class="literal">Eq</code>.
+</p></li><li class="listitem"><p>
+Unlike a <code class="literal">deriving</code>
+declaration attached to a <code class="literal">data</code> declaration,
+GHC does not restrict the form of the data type.  Instead, GHC simply generates the appropriate
+boilerplate code for the specified class, and typechecks it. If there is a type error, it is
+your problem. (GHC will show you the offending code if it has a type error.)
+The merit of this is that you can derive instances for GADTs and other exotic
+data types, providing only that the boilerplate code does indeed typecheck.  For example:
+</p><pre class="programlisting">
+  data T a where
+     T1 :: T Int
+     T2 :: T Bool
+
+  deriving instance Show (T a)
+</pre><p>
+In this example, you cannot say <code class="literal">... deriving( Show )</code> on the
+data type declaration for <code class="literal">T</code>,
+because <code class="literal">T</code> is a GADT, but you <span class="emphasis"><em>can</em></span> generate
+the instance declaration using stand-alone deriving.
+</p></li><li class="listitem"><p>The stand-alone syntax is generalised for newtypes in exactly the same
+way that ordinary <code class="literal">deriving</code> clauses are generalised (<a class="xref" href="deriving.html#newtype-deriving" title="7.5.4. Generalised derived instances for newtypes">Section 7.5.4, &#8220;Generalised derived instances for newtypes&#8221;</a>).
+For example:
+</p><pre class="programlisting">
+  newtype Foo a = MkFoo (State Int a)
+
+  deriving instance MonadState Int Foo
+</pre><p>
+GHC always treats the <span class="emphasis"><em>last</em></span> parameter of the instance
+(<code class="literal">Foo</code> in this example) as the type whose instance is being derived.
+</p></li></ul></div></div><div class="sect2" title="7.5.3. Deriving clause for extra classes (Typeable, Data, etc)"><div class="titlepage"><div><div><h3 class="title"><a name="deriving-typeable"></a>7.5.3. Deriving clause for extra classes (<code class="literal">Typeable</code>, <code class="literal">Data</code>, etc)</h3></div></div></div><p>
+Haskell 98 allows the programmer to add "<code class="literal">deriving( Eq, Ord )</code>" to a data type
+declaration, to generate a standard instance declaration for classes specified in the <code class="literal">deriving</code> clause.
+In Haskell 98, the only classes that may appear in the <code class="literal">deriving</code> clause are the standard
+classes <code class="literal">Eq</code>, <code class="literal">Ord</code>,
+<code class="literal">Enum</code>, <code class="literal">Ix</code>, <code class="literal">Bounded</code>, <code class="literal">Read</code>, and <code class="literal">Show</code>.
+</p><p>
+GHC extends this list with several more classes that may be automatically derived:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p> With <code class="option">-XDeriveDataTypeable</code>, you can derive instances of the classes
+<code class="literal">Typeable</code>, and <code class="literal">Data</code>, defined in the library
+modules <code class="literal">Data.Typeable</code> and <code class="literal">Data.Generics</code> respectively.
+</p><p>An instance of <code class="literal">Typeable</code> can only be derived if the
+data type has seven or fewer type parameters, all of kind <code class="literal">*</code>.
+The reason for this is that the <code class="literal">Typeable</code> class is derived using the scheme
+described in
+<a class="ulink" href="http://research.microsoft.com/%7Esimonpj/papers/hmap/gmap2.ps" target="_top">
+Scrap More Boilerplate: Reflection, Zips, and Generalised Casts
+</a>.
+(Section 7.4 of the paper describes the multiple <code class="literal">Typeable</code> classes that
+are used, and only <code class="literal">Typeable1</code> up to
+<code class="literal">Typeable7</code> are provided in the library.)
+In other cases, there is nothing to stop the programmer writing a <code class="literal">TypeableX</code>
+class, whose kind suits that of the data type constructor, and
+then writing the data type instance by hand.
+</p></li><li class="listitem"><p> With <code class="option">-XDeriveGeneric</code>, you can derive
+instances of the classes <code class="literal">Generic</code> and
+<code class="literal">Generic1</code>, defined in <code class="literal">GHC.Generics</code>.
+You can use these to define generic functions,
+as described in <a class="xref" href="generic-programming.html" title="7.22. Generic programming">Section 7.22, &#8220;Generic programming&#8221;</a>.
+</p></li><li class="listitem"><p> With <code class="option">-XDeriveFunctor</code>, you can derive instances of
+the class <code class="literal">Functor</code>,
+defined in <code class="literal">GHC.Base</code>.
+</p></li><li class="listitem"><p> With <code class="option">-XDeriveFoldable</code>, you can derive instances of
+the class <code class="literal">Foldable</code>,
+defined in <code class="literal">Data.Foldable</code>.
+</p></li><li class="listitem"><p> With <code class="option">-XDeriveTraversable</code>, you can derive instances of
+the class <code class="literal">Traversable</code>,
+defined in <code class="literal">Data.Traversable</code>.
+</p></li></ul></div><p>
+In each case the appropriate class must be in scope before it
+can be mentioned in the <code class="literal">deriving</code> clause.
+</p></div><div class="sect2" title="7.5.4. Generalised derived instances for newtypes"><div class="titlepage"><div><div><h3 class="title"><a name="newtype-deriving"></a>7.5.4. Generalised derived instances for newtypes</h3></div></div></div><p>
+When you define an abstract type using <code class="literal">newtype</code>, you may want
+the new type to inherit some instances from its representation. In
+Haskell 98, you can inherit instances of <code class="literal">Eq</code>, <code class="literal">Ord</code>,
+<code class="literal">Enum</code> and <code class="literal">Bounded</code> by deriving them, but for any
+other classes you have to write an explicit instance declaration. For
+example, if you define
+
+</p><pre class="programlisting">
+  newtype Dollars = Dollars Int
+</pre><p>
+
+and you want to use arithmetic on <code class="literal">Dollars</code>, you have to
+explicitly define an instance of <code class="literal">Num</code>:
+
+</p><pre class="programlisting">
+  instance Num Dollars where
+    Dollars a + Dollars b = Dollars (a+b)
+    ...
+</pre><p>
+All the instance does is apply and remove the <code class="literal">newtype</code>
+constructor. It is particularly galling that, since the constructor
+doesn't appear at run-time, this instance declaration defines a
+dictionary which is <span class="emphasis"><em>wholly equivalent</em></span> to the <code class="literal">Int</code>
+dictionary, only slower!
+</p><div class="sect3" title="7.5.4.1.  Generalising the deriving clause"><div class="titlepage"><div><div><h4 class="title"><a name="idp53171424"></a>7.5.4.1.  Generalising the deriving clause </h4></div></div></div><p>
+GHC now permits such instances to be derived instead,
+using the flag <code class="option">-XGeneralizedNewtypeDeriving</code>,
+so one can write
+</p><pre class="programlisting">
+  newtype Dollars = Dollars Int deriving (Eq,Show,Num)
+</pre><p>
+
+and the implementation uses the <span class="emphasis"><em>same</em></span> <code class="literal">Num</code> dictionary
+for <code class="literal">Dollars</code> as for <code class="literal">Int</code>. Notionally, the compiler
+derives an instance declaration of the form
+
+</p><pre class="programlisting">
+  instance Num Int =&gt; Num Dollars
+</pre><p>
+
+which just adds or removes the <code class="literal">newtype</code> constructor according to the type.
+</p><p>
+
+We can also derive instances of constructor classes in a similar
+way. For example, suppose we have implemented state and failure monad
+transformers, such that
+
+</p><pre class="programlisting">
+  instance Monad m =&gt; Monad (State s m)
+  instance Monad m =&gt; Monad (Failure m)
+</pre><p>
+In Haskell 98, we can define a parsing monad by
+</p><pre class="programlisting">
+  type Parser tok m a = State [tok] (Failure m) a
+</pre><p>
+
+which is automatically a monad thanks to the instance declarations
+above. With the extension, we can make the parser type abstract,
+without needing to write an instance of class <code class="literal">Monad</code>, via
+
+</p><pre class="programlisting">
+  newtype Parser tok m a = Parser (State [tok] (Failure m) a)
+                         deriving Monad
+</pre><p>
+In this case the derived instance declaration is of the form
+</p><pre class="programlisting">
+  instance Monad (State [tok] (Failure m)) =&gt; Monad (Parser tok m)
+</pre><p>
+
+Notice that, since <code class="literal">Monad</code> is a constructor class, the
+instance is a <span class="emphasis"><em>partial application</em></span> of the new type, not the
+entire left hand side. We can imagine that the type declaration is
+"eta-converted" to generate the context of the instance
+declaration.
+</p><p>
+
+We can even derive instances of multi-parameter classes, provided the
+newtype is the last class parameter. In this case, a ``partial
+application'' of the class appears in the <code class="literal">deriving</code>
+clause. For example, given the class
+
+</p><pre class="programlisting">
+  class StateMonad s m | m -&gt; s where ...
+  instance Monad m =&gt; StateMonad s (State s m) where ...
+</pre><p>
+then we can derive an instance of <code class="literal">StateMonad</code> for <code class="literal">Parser</code>s by
+</p><pre class="programlisting">
+  newtype Parser tok m a = Parser (State [tok] (Failure m) a)
+                         deriving (Monad, StateMonad [tok])
+</pre><p>
+
+The derived instance is obtained by completing the application of the
+class to the new type:
+
+</p><pre class="programlisting">
+  instance StateMonad [tok] (State [tok] (Failure m)) =&gt;
+           StateMonad [tok] (Parser tok m)
+</pre><p>
+</p><p>
+
+As a result of this extension, all derived instances in newtype
+ declarations are treated uniformly (and implemented just by reusing
+the dictionary for the representation type), <span class="emphasis"><em>except</em></span>
+<code class="literal">Show</code> and <code class="literal">Read</code>, which really behave differently for
+the newtype and its representation.
+</p></div><div class="sect3" title="7.5.4.2.  A more precise specification"><div class="titlepage"><div><div><h4 class="title"><a name="idp53190720"></a>7.5.4.2.  A more precise specification </h4></div></div></div><p>
+Derived instance declarations are constructed as follows. Consider the
+declaration (after expansion of any type synonyms)
+
+</p><pre class="programlisting">
+  newtype T v1...vn = T' (t vk+1...vn) deriving (c1...cm)
+</pre><p>
+
+where
+ </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+  The <code class="literal">ci</code> are partial applications of
+  classes of the form <code class="literal">C t1'...tj'</code>, where the arity of <code class="literal">C</code>
+  is exactly <code class="literal">j+1</code>.  That is, <code class="literal">C</code> lacks exactly one type argument.
+</p></li><li class="listitem"><p>
+  The <code class="literal">k</code> is chosen so that <code class="literal">ci (T v1...vk)</code> is well-kinded.
+</p></li><li class="listitem"><p>
+  The type <code class="literal">t</code> is an arbitrary type.
+</p></li><li class="listitem"><p>
+  The type variables <code class="literal">vk+1...vn</code> do not occur in <code class="literal">t</code>,
+  nor in the <code class="literal">ci</code>, and
+</p></li><li class="listitem"><p>
+  None of the <code class="literal">ci</code> is <code class="literal">Read</code>, <code class="literal">Show</code>,
+		<code class="literal">Typeable</code>, or <code class="literal">Data</code>.  These classes
+		should not "look through" the type or its constructor.  You can still
+		derive these classes for a newtype, but it happens in the usual way, not
+		via this new mechanism.
+</p></li></ul></div><p>
+Then, for each <code class="literal">ci</code>, the derived instance
+declaration is:
+</p><pre class="programlisting">
+  instance ci t =&gt; ci (T v1...vk)
+</pre><p>
+As an example which does <span class="emphasis"><em>not</em></span> work, consider
+</p><pre class="programlisting">
+  newtype NonMonad m s = NonMonad (State s m s) deriving Monad
+</pre><p>
+Here we cannot derive the instance
+</p><pre class="programlisting">
+  instance Monad (State s m) =&gt; Monad (NonMonad m)
+</pre><p>
+
+because the type variable <code class="literal">s</code> occurs in <code class="literal">State s m</code>,
+and so cannot be "eta-converted" away. It is a good thing that this
+<code class="literal">deriving</code> clause is rejected, because <code class="literal">NonMonad m</code> is
+not, in fact, a monad --- for the same reason. Try defining
+<code class="literal">&gt;&gt;=</code> with the correct type: you won't be able to.
+</p><p>
+
+Notice also that the <span class="emphasis"><em>order</em></span> of class parameters becomes
+important, since we can only derive instances for the last one. If the
+<code class="literal">StateMonad</code> class above were instead defined as
+
+</p><pre class="programlisting">
+  class StateMonad m s | m -&gt; s where ...
+</pre><p>
+
+then we would not have been able to derive an instance for the
+<code class="literal">Parser</code> type above. We hypothesise that multi-parameter
+classes usually have one "main" parameter for which deriving new
+instances is most interesting.
+</p><p>Lastly, all of this applies only for classes other than
+<code class="literal">Read</code>, <code class="literal">Show</code>, <code class="literal">Typeable</code>,
+and <code class="literal">Data</code>, for which the built-in derivation applies (section
+4.3.3. of the Haskell Report).
+(For the standard classes <code class="literal">Eq</code>, <code class="literal">Ord</code>,
+<code class="literal">Ix</code>, and <code class="literal">Bounded</code> it is immaterial whether
+the standard method is used or the one described here.)
+</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="data-type-extensions.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghc-language-features.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="type-class-extensions.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.4. Extensions to data types and type synonyms </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 7.6. Class and instances declarations</td></tr></table></div></body></html>

@@ -1,0 +1,340 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>7.14. Template Haskell</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghc-language-features.html" title="Chapter 7. GHC Language Features"><link rel="prev" href="defer-type-errors.html" title="7.13. Deferring type errors to runtime"><link rel="next" href="arrow-notation.html" title="7.15. Arrow notation"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">7.14. Template Haskell</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="defer-type-errors.html">Prev</a> </td><th width="60%" align="center">Chapter 7. GHC Language Features</th><td width="20%" align="right"> <a accesskey="n" href="arrow-notation.html">Next</a></td></tr></table><hr></div><div class="sect1" title="7.14. Template Haskell"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="template-haskell"></a>7.14. Template Haskell</h2></div></div></div><p>Template Haskell allows you to do compile-time meta-programming in
+Haskell.
+The background to
+the main technical innovations is discussed in "<a class="ulink" href="http://research.microsoft.com/~simonpj/papers/meta-haskell/" target="_top">
+Template Meta-programming for Haskell</a>" (Proc Haskell Workshop 2002).
+</p><p>
+There is a Wiki page about
+Template Haskell at <a class="ulink" href="http://www.haskell.org/haskellwiki/Template_Haskell" target="_top">
+http://www.haskell.org/haskellwiki/Template_Haskell</a>, and that is the best place to look for
+further details.
+You may also
+consult the <a class="ulink" href="http://www.haskell.org/ghc/docs/latest/html/libraries/index.html" target="_top">online
+Haskell library reference material</a>
+(look for module <code class="literal">Language.Haskell.TH</code>).
+Many changes to the original design are described in
+      <a class="ulink" href="http://research.microsoft.com/~simonpj/papers/meta-haskell/notes2.ps" target="_top">
+Notes on Template Haskell version 2</a>.
+Not all of these changes are in GHC, however.
+</p><p> The first example from that paper is set out below (<a class="xref" href="template-haskell.html#th-example" title="7.14.3.  A Template Haskell Worked Example">Section 7.14.3, &#8220; A Template Haskell Worked Example &#8221;</a>)
+as a worked example to help get you started.
+</p><p>
+The documentation here describes the realisation of Template Haskell in GHC.  It is not detailed enough to
+understand Template Haskell; see the <a class="ulink" href="http://haskell.org/haskellwiki/Template_Haskell" target="_top">
+Wiki page</a>.
+</p><div class="sect2" title="7.14.1. Syntax"><div class="titlepage"><div><div><h3 class="title"><a name="th-syntax"></a>7.14.1. Syntax</h3></div></div></div><p> Template Haskell has the following new syntactic
+      constructions.  You need to use the flag
+      <code class="option">-XTemplateHaskell</code>
+	<a class="indexterm" name="idp54028432"></a>to switch these syntactic extensions on
+      (<code class="option">-XTemplateHaskell</code> is no longer implied by
+      <code class="option">-fglasgow-exts</code>).</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+		  A splice is written <code class="literal">$x</code>, where <code class="literal">x</code> is an
+		  identifier, or <code class="literal">$(...)</code>, where the "..." is an arbitrary expression.
+		  There must be no space between the "$" and the identifier or parenthesis.  This use
+		  of "$" overrides its meaning as an infix operator, just as "M.x" overrides the meaning
+		  of "." as an infix operator.  If you want the infix operator, put spaces around it.
+		  </p><p> A splice can occur in place of
+		  </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p> an expression; the spliced expression must
+		    have type <code class="literal">Q Exp</code></p></li><li class="listitem"><p> an type; the spliced expression must
+		    have type <code class="literal">Q Typ</code></p></li><li class="listitem"><p> a list of top-level declarations; the spliced expression
+                    must have type <code class="literal">Q [Dec]</code></p></li></ul></div><p>
+            Note that pattern splices are not supported.
+            Inside a splice you can only call functions defined in imported modules,
+	    not functions defined elsewhere in the same module.</p></li><li class="listitem"><p>
+		  A expression quotation is written in Oxford brackets, thus:
+		  </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p> <code class="literal">[| ... |]</code>, or <code class="literal">[e| ... |]</code>,
+                             where the "..." is an expression;
+                             the quotation has type <code class="literal">Q Exp</code>.</p></li><li class="listitem"><p> <code class="literal">[d| ... |]</code>, where the "..." is a list of top-level declarations;
+                             the quotation has type <code class="literal">Q [Dec]</code>.</p></li><li class="listitem"><p> <code class="literal">[t| ... |]</code>, where the "..." is a type;
+                             the quotation has type <code class="literal">Q Type</code>.</p></li><li class="listitem"><p> <code class="literal">[p| ... |]</code>, where the "..." is a pattern;
+                             the quotation has type <code class="literal">Q Pat</code>.</p></li></ul></div></li><li class="listitem"><p>
+		  A quasi-quotation can appear in either a pattern context or an
+		  expression context and is also written in Oxford brackets:
+		  </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p> <code class="literal">[<em class="replaceable"><code>varid</code></em>| ... |]</code>,
+                        where the "..." is an arbitrary string; a full description of the
+			quasi-quotation facility is given in <a class="xref" href="template-haskell.html#th-quasiquotation" title="7.14.5.  Template Haskell Quasi-quotation">Section 7.14.5, &#8220; Template Haskell Quasi-quotation &#8221;</a>.</p></li></ul></div></li><li class="listitem"><p>
+		  A name can be quoted with either one or two prefix single quotes:
+		  </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p> <code class="literal">'f</code> has type <code class="literal">Name</code>, and names the function <code class="literal">f</code>.
+		  Similarly <code class="literal">'C</code> has type <code class="literal">Name</code> and names the data constructor <code class="literal">C</code>.
+		  In general <code class="literal">'</code><em class="replaceable"><code>thing</code></em> 
+                  interprets <em class="replaceable"><code>thing</code></em> in an expression context.</p><p>A name whose second character is a single
+                    quote (sadly) cannot be quoted in this way,
+                    because it will be parsed instead as a quoted
+                    character.  For example, if the function is called
+                    <code class="literal">f'7</code> (which is a legal Haskell
+                    identifier), an attempt to quote it as
+                    <code class="literal">'f'7</code> would be parsed as the
+                    character literal <code class="literal">'f'</code> followed
+                    by the numeric literal <code class="literal">7</code>. There
+                    is no current escape mechanism in this (unusual)
+                    situation.
+		     </p></li><li class="listitem"><p> <code class="literal">''T</code> has type <code class="literal">Name</code>, and names the type constructor  <code class="literal">T</code>.
+		  That is, <code class="literal">''</code><em class="replaceable"><code>thing</code></em> interprets <em class="replaceable"><code>thing</code></em> in a type context.
+		     </p></li></ul></div><p>
+	          These <code class="literal">Names</code> can be used to construct Template Haskell expressions, patterns, declarations etc.  They
+	          may also be given as an argument to the <code class="literal">reify</code> function.
+	         </p></li><li class="listitem"><p> You may omit the <code class="literal">$(...)</code> in a top-level declaration splice.
+              Simply writing an expression (rather than a declaration) implies a splice.  For example, you can write
+</p><pre class="programlisting">
+module Foo where
+import Bar
+
+f x = x
+
+$(deriveStuff 'f)   -- Uses the $(...) notation
+
+g y = y+1
+
+deriveStuff 'g      -- Omits the $(...)
+
+h z = z-1
+</pre><p>
+            This abbreviation makes top-level declaration slices quieter and less intimidating.
+	    </p></li></ul></div>
+(Compared to the original paper, there are many differences of detail.
+The syntax for a declaration splice uses "<code class="literal">$</code>" not "<code class="literal">splice</code>".
+The type of the enclosed expression must be  <code class="literal">Q [Dec]</code>, not  <code class="literal">[Q Dec]</code>.
+Pattern splices and quotations are not implemented.)
+
+</div><div class="sect2" title="7.14.2.  Using Template Haskell"><div class="titlepage"><div><div><h3 class="title"><a name="idp54071536"></a>7.14.2.  Using Template Haskell </h3></div></div></div><p>
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+    The data types and monadic constructor functions for Template Haskell are in the library
+    <code class="literal">Language.Haskell.THSyntax</code>.
+    </p></li><li class="listitem"><p>
+    You can only run a function at compile time if it is imported from another module.  That is,
+	    you can't define a function in a module, and call it from within a splice in the same module.
+	    (It would make sense to do so, but it's hard to implement.)
+   </p></li><li class="listitem"><p>
+   You can only run a function at compile time if it is imported
+   from another module <span class="emphasis"><em>that is not part of a mutually-recursive group of modules
+   that includes the module currently being compiled</em></span>.  Furthermore, all of the modules of
+   the mutually-recursive group must be reachable by non-SOURCE imports from the module where the
+   splice is to be run.</p><p>
+   For example, when compiling module A,
+   you can only run Template Haskell functions imported from B if B does not import A (directly or indirectly).
+   The reason should be clear: to run B we must compile and run A, but we are currently type-checking A.
+   </p></li><li class="listitem"><p>
+	    The flag <code class="literal">-ddump-splices</code> shows the expansion of all top-level splices as they happen.
+   </p></li><li class="listitem"><p>
+	    If you are building GHC from source, you need at least a stage-2 bootstrap compiler to
+	      run Template Haskell.  A stage-1 compiler will reject the TH constructs.  Reason: TH
+	      compiles and runs a program, and then looks at the result.  So it's important that
+	      the program it compiles produces results whose representations are identical to
+	      those of the compiler itself.
+   </p></li></ul></div><p>
+</p><p> Template Haskell works in any mode (<code class="literal">--make</code>, <code class="literal">--interactive</code>,
+	or file-at-a-time).  There used to be a restriction to the former two, but that restriction
+	has been lifted.
+</p></div><div class="sect2" title="7.14.3.  A Template Haskell Worked Example"><div class="titlepage"><div><div><h3 class="title"><a name="th-example"></a>7.14.3.  A Template Haskell Worked Example </h3></div></div></div><p>To help you get over the confidence barrier, try out this skeletal worked example.
+  First cut and paste the two modules below into "Main.hs" and "Printf.hs":</p><pre class="programlisting">
+
+{- Main.hs -}
+module Main where
+
+-- Import our template "pr"
+import Printf ( pr )
+
+-- The splice operator $ takes the Haskell source code
+-- generated at compile time by "pr" and splices it into
+-- the argument of "putStrLn".
+main = putStrLn ( $(pr "Hello") )
+
+
+{- Printf.hs -}
+module Printf where
+
+-- Skeletal printf from the paper.
+-- It needs to be in a separate module to the one where
+-- you intend to use it.
+
+-- Import some Template Haskell syntax
+import Language.Haskell.TH
+
+-- Describe a format string
+data Format = D | S | L String
+
+-- Parse a format string.  This is left largely to you
+-- as we are here interested in building our first ever
+-- Template Haskell program and not in building printf.
+parse :: String -&gt; [Format]
+parse s   = [ L s ]
+
+-- Generate Haskell source code from a parsed representation
+-- of the format string.  This code will be spliced into
+-- the module which calls "pr", at compile time.
+gen :: [Format] -&gt; Q Exp
+gen [D]   = [| \n -&gt; show n |]
+gen [S]   = [| \s -&gt; s |]
+gen [L s] = stringE s
+
+-- Here we generate the Haskell code for the splice
+-- from an input format string.
+pr :: String -&gt; Q Exp
+pr s = gen (parse s)
+</pre><p>Now run the compiler (here we are a Cygwin prompt on Windows):
+</p><pre class="programlisting">
+$ ghc --make -XTemplateHaskell main.hs -o main.exe
+</pre><p>Run "main.exe" and here is your output:</p><pre class="programlisting">
+$ ./main
+Hello
+</pre></div><div class="sect2" title="7.14.4. Using Template Haskell with Profiling"><div class="titlepage"><div><div><h3 class="title"><a name="idp54085632"></a>7.14.4. Using Template Haskell with Profiling</h3></div></div></div><a class="indexterm" name="idp54086320"></a><p>Template Haskell relies on GHC's built-in bytecode compiler and
+interpreter to run the splice expressions.  The bytecode interpreter
+runs the compiled expression on top of the same runtime on which GHC
+itself is running; this means that the compiled code referred to by
+the interpreted expression must be compatible with this runtime, and
+in particular this means that object code that is compiled for
+profiling <span class="emphasis"><em>cannot</em></span> be loaded and used by a splice
+expression, because profiled object code is only compatible with the
+profiling version of the runtime.</p><p>This causes difficulties if you have a multi-module program
+containing Template Haskell code and you need to compile it for
+profiling, because GHC cannot load the profiled object code and use it
+when executing the splices.  Fortunately GHC provides a workaround.
+The basic idea is to compile the program twice:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p>Compile the program or library first the normal way, without
+  <code class="option">-prof</code><a class="indexterm" name="idp54091008"></a>.</p></li><li class="listitem"><p>Then compile it again with <code class="option">-prof</code>, and
+  additionally use <code class="option">-osuf
+  p_o</code><a class="indexterm" name="idp54093408"></a>
+  to name the object files differently (you can choose any suffix
+  that isn't the normal object suffix here).  GHC will automatically
+  load the object files built in the first step when executing splice
+  expressions.  If you omit the <code class="option">-osuf</code> flag when
+  building with <code class="option">-prof</code> and Template Haskell is used,
+  GHC will emit an error message. </p></li></ol></div></div><div class="sect2" title="7.14.5.  Template Haskell Quasi-quotation"><div class="titlepage"><div><div><h3 class="title"><a name="th-quasiquotation"></a>7.14.5.  Template Haskell Quasi-quotation </h3></div></div></div><p>Quasi-quotation allows patterns and expressions to be written using
+programmer-defined concrete syntax; the motivation behind the extension and
+several examples are documented in
+"<a class="ulink" href="http://www.eecs.harvard.edu/~mainland/ghc-quasiquoting/" target="_top">Why It's
+Nice to be Quoted: Quasiquoting for Haskell</a>" (Proc Haskell Workshop
+2007). The example below shows how to write a quasiquoter for a simple
+expression language.</p><p>
+Here are the salient features
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+A quasi-quote has the form
+<code class="literal">[<em class="replaceable"><code>quoter</code></em>| <em class="replaceable"><code>string</code></em> |]</code>.
+</p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>
+The <em class="replaceable"><code>quoter</code></em> must be the (unqualified) name of an imported
+quoter; it cannot be an arbitrary expression.
+</p></li><li class="listitem"><p>
+The <em class="replaceable"><code>quoter</code></em> cannot be "<code class="literal">e</code>",
+"<code class="literal">t</code>", "<code class="literal">d</code>", or "<code class="literal">p</code>", since
+those overlap with Template Haskell quotations.
+</p></li><li class="listitem"><p>
+There must be no spaces in the token
+<code class="literal">[<em class="replaceable"><code>quoter</code></em>|</code>.
+</p></li><li class="listitem"><p>
+The quoted <em class="replaceable"><code>string</code></em>
+can be arbitrary, and may contain newlines.
+</p></li><li class="listitem"><p>
+The quoted <em class="replaceable"><code>string</code></em>
+finishes at the first occurrence of the two-character sequence <code class="literal">"|]"</code>.
+Absolutely no escaping is performed.  If you want to embed that character
+sequence in the string, you must invent your own escape convention (such
+as, say, using the string <code class="literal">"|~]"</code> instead), and make your
+quoter function interpret <code class="literal">"|~]"</code> as <code class="literal">"|]"</code>.
+One way to implement this is to compose your quoter with a pre-processing pass to
+perform your escape conversion.  See the
+<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/5348" target="_top">
+discussion in Trac</a> for details.
+</p></li></ul></div><p>
+</p></li><li class="listitem"><p>
+A quasiquote may appear in place of
+</p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>An expression</p></li><li class="listitem"><p>A pattern</p></li><li class="listitem"><p>A type</p></li><li class="listitem"><p>A top-level declaration</p></li></ul></div><p>
+(Only the first two are described in the paper.)
+</p></li><li class="listitem"><p>
+A quoter is a value of type <code class="literal">Language.Haskell.TH.Quote.QuasiQuoter</code>,
+which is defined thus:
+</p><pre class="programlisting">
+data QuasiQuoter = QuasiQuoter { quoteExp  :: String -&gt; Q Exp,
+                                 quotePat  :: String -&gt; Q Pat,
+                                 quoteType :: String -&gt; Q Type,
+                                 quoteDec  :: String -&gt; Q [Dec] }
+</pre><p>
+That is, a quoter is a tuple of four parsers, one for each of the contexts
+in which a quasi-quote can occur.
+</p></li><li class="listitem"><p>
+A quasi-quote is expanded by applying the appropriate parser to the string
+enclosed by the Oxford brackets.  The context of the quasi-quote (expression, pattern,
+type, declaration) determines which of the parsers is called.
+</p></li></ul></div><p>
+</p><p>
+The example below shows quasi-quotation in action.  The quoter <code class="literal">expr</code>
+is bound to a value of type <code class="literal">QuasiQuoter</code> defined in module <code class="literal">Expr</code>.
+The example makes use of an antiquoted
+variable <code class="literal">n</code>, indicated by the syntax <code class="literal">'int:n</code>
+(this syntax for anti-quotation was defined by the parser's
+author, <span class="emphasis"><em>not</em></span> by GHC). This binds <code class="literal">n</code> to the
+integer value argument of the constructor <code class="literal">IntExpr</code> when
+pattern matching. Please see the referenced paper for further details regarding
+anti-quotation as well as the description of a technique that uses SYB to
+leverage a single parser of type <code class="literal">String -&gt; a</code> to generate both
+an expression parser that returns a value of type <code class="literal">Q Exp</code> and a
+pattern parser that returns a value of type <code class="literal">Q Pat</code>.
+</p><p>
+Quasiquoters must obey the same stage restrictions as Template Haskell, e.g., in
+the example, <code class="literal">expr</code> cannot be defined
+in <code class="literal">Main.hs</code> where it is used, but must be imported.
+</p><pre class="programlisting">
+{- ------------- file Main.hs --------------- -}
+module Main where
+
+import Expr
+
+main :: IO ()
+main = do { print $ eval [expr|1 + 2|]
+          ; case IntExpr 1 of
+              { [expr|'int:n|] -&gt; print n
+              ;  _              -&gt; return ()
+              }
+          }
+
+
+{- ------------- file Expr.hs --------------- -}
+module Expr where
+
+import qualified Language.Haskell.TH as TH
+import Language.Haskell.TH.Quote
+
+data Expr  =  IntExpr Integer
+           |  AntiIntExpr String
+           |  BinopExpr BinOp Expr Expr
+           |  AntiExpr String
+    deriving(Show, Typeable, Data)
+
+data BinOp  =  AddOp
+            |  SubOp
+            |  MulOp
+            |  DivOp
+    deriving(Show, Typeable, Data)
+
+eval :: Expr -&gt; Integer
+eval (IntExpr n)        = n
+eval (BinopExpr op x y) = (opToFun op) (eval x) (eval y)
+  where
+    opToFun AddOp = (+)
+    opToFun SubOp = (-)
+    opToFun MulOp = (*)
+    opToFun DivOp = div
+
+expr = QuasiQuoter { quoteExp = parseExprExp, quotePat =  parseExprPat }
+
+-- Parse an Expr, returning its representation as
+-- either a Q Exp or a Q Pat. See the referenced paper
+-- for how to use SYB to do this by writing a single
+-- parser of type String -&gt; Expr instead of two
+-- separate parsers.
+
+parseExprExp :: String -&gt; Q Exp
+parseExprExp ...
+
+parseExprPat :: String -&gt; Q Pat
+parseExprPat ...
+</pre><p>Now run the compiler:
+</p><pre class="programlisting">
+$ ghc --make -XQuasiQuotes Main.hs -o main
+</pre><p>
+</p><p>Run "main" and here is your output:
+</p><pre class="programlisting">
+$ ./main
+3
+1
+</pre><p>
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="defer-type-errors.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghc-language-features.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="arrow-notation.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.13. Deferring type errors to runtime </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 7.15. Arrow notation
+</td></tr></table></div></body></html>

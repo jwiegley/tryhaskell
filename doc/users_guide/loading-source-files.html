@@ -1,0 +1,74 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>2.2. Loading source files</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghci.html" title="Chapter 2. Using GHCi"><link rel="prev" href="ghci.html" title="Chapter 2. Using GHCi"><link rel="next" href="ghci-compiled.html" title="2.3. Loading compiled code"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">2.2. Loading source files</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ghci.html">Prev</a> </td><th width="60%" align="center">Chapter 2. Using GHCi</th><td width="20%" align="right"> <a accesskey="n" href="ghci-compiled.html">Next</a></td></tr></table><hr></div><div class="sect1" title="2.2. Loading source files"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="loading-source-files"></a>2.2. Loading source files</h2></div></div></div><p>Suppose we have the following Haskell source code, which we
+    place in a file <code class="filename">Main.hs</code>:</p><pre class="programlisting">
+main = print (fac 20)
+
+fac 0 = 1
+fac n = n * fac (n-1)
+</pre><p>You can save <code class="filename">Main.hs</code> anywhere you like,
+    but if you save it somewhere other than the current
+    directory<sup>[<a name="idp37844224" href="#ftn.idp37844224" class="footnote">3</a>]</sup> then we will
+    need to change to the right directory in GHCi:</p><pre class="screen">
+Prelude&gt; :cd <em class="replaceable"><code>dir</code></em>
+</pre><p>where <em class="replaceable"><code>dir</code></em> is the directory (or
+    folder) in which you saved <code class="filename">Main.hs</code>.</p><p>To load a Haskell source file into GHCi, use the
+    <code class="literal">:load</code> command:</p><a class="indexterm" name="idp37849920"></a><pre class="screen">
+Prelude&gt; :load Main
+Compiling Main             ( Main.hs, interpreted )
+Ok, modules loaded: Main.
+*Main&gt;
+</pre><p>GHCi has loaded the <code class="literal">Main</code> module, and the
+    prompt has changed to &#8220;<code class="literal">*Main&gt;</code>&#8221; to
+    indicate that the current context for expressions typed at the
+    prompt is the <code class="literal">Main</code> module we just loaded (we'll
+    explain what the <code class="literal">*</code> means later in <a class="xref" href="interactive-evaluation.html#ghci-scope" title="2.4.5. What's really in scope at the prompt?">Section 2.4.5, &#8220;What's really in scope at the prompt?&#8221;</a>).  So we can now type expressions involving
+    the functions from <code class="filename">Main.hs</code>:</p><pre class="screen">
+*Main&gt; fac 17
+355687428096000
+</pre><p>Loading a multi-module program is just as straightforward;
+    just give the name of the &#8220;topmost&#8221; module to the
+    <code class="literal">:load</code> command (hint: <code class="literal">:load</code>
+    can be abbreviated to <code class="literal">:l</code>).  The topmost module
+    will normally be <code class="literal">Main</code>, but it doesn't have to
+    be.  GHCi will discover which modules are required, directly or
+    indirectly, by the topmost module, and load them all in dependency
+    order.</p><div class="sect2" title="2.2.1. Modules vs. filenames"><div class="titlepage"><div><div><h3 class="title"><a name="ghci-modules-filenames"></a>2.2.1. Modules vs. filenames</h3></div></div></div><a class="indexterm" name="idp37860384"></a><a class="indexterm" name="idp37861280"></a><p>Question: How does GHC find the filename which contains
+      module <em class="replaceable"><code>M</code></em>?  Answer: it looks for the
+      file <code class="literal"><em class="replaceable"><code>M</code></em>.hs</code>, or
+      <code class="literal"><em class="replaceable"><code>M</code></em>.lhs</code>.  This means
+      that for most modules, the module name must match the filename.
+      If it doesn't, GHCi won't be able to find it.</p><p>There is one exception to this general rule: when you load
+      a program with <code class="literal">:load</code>, or specify it when you
+      invoke <code class="literal">ghci</code>, you can give a filename rather
+      than a module name.  This filename is loaded if it exists, and
+      it may contain any module you like.  This is particularly
+      convenient if you have several <code class="literal">Main</code> modules
+      in the same directory and you can't call them all
+      <code class="filename">Main.hs</code>.</p><p>The search path for finding source files is specified with
+      the <code class="option">-i</code> option on the GHCi command line, like
+      so:</p><pre class="screen">ghci -i<em class="replaceable"><code>dir<sub>1</sub></code></em>:...:<em class="replaceable"><code>dir<sub>n</sub></code></em></pre><p>or it can be set using the <code class="literal">:set</code> command
+      from within GHCi (see <a class="xref" href="ghci-set.html#ghci-cmd-line-options" title="2.8.2. Setting GHC command-line options in GHCi">Section 2.8.2, &#8220;Setting GHC command-line options in GHCi&#8221;</a>)<sup>[<a name="idp37872208" href="#ftn.idp37872208" class="footnote">4</a>]</sup></p><p>One consequence of the way that GHCi follows dependencies
+      to find modules to load is that every module must have a source
+      file.  The only exception to the rule is modules that come from
+      a package, including the <code class="literal">Prelude</code> and standard
+      libraries such as <code class="literal">IO</code> and
+      <code class="literal">Complex</code>.  If you attempt to load a module for
+      which GHCi can't find a source file, even if there are object
+      and interface files for the module, you'll get an error
+      message.</p></div><div class="sect2" title="2.2.2. Making changes and recompilation"><div class="titlepage"><div><div><h3 class="title"><a name="idp37877840"></a>2.2.2. Making changes and recompilation</h3></div></div></div><a class="indexterm" name="idp37878480"></a><p>If you make some changes to the source code and want GHCi
+      to recompile the program, give the <code class="literal">:reload</code>
+      command.  The program will be recompiled as necessary, with GHCi
+      doing its best to avoid actually recompiling modules if their
+      external dependencies haven't changed.  This is the same
+      mechanism we use to avoid re-compiling modules in the batch
+      compilation setting (see <a class="xref" href="separate-compilation.html#recomp" title="4.7.8. The recompilation checker">Section 4.7.8, &#8220;The recompilation checker&#8221;</a>).</p></div><div class="footnotes"><br><hr width="100" align="left"><div class="footnote"><p><sup>[<a id="ftn.idp37844224" href="#idp37844224" class="para">3</a>] </sup>If you started up GHCi from the command
+    line then GHCi's current directory is the same as the current
+    directory of the shell from which it was started.  If you started
+    GHCi from the &#8220;Start&#8221; menu in Windows, then the
+    current directory is probably something like
+    <code class="filename">C:\Documents and Settings\<em class="replaceable"><code>user
+    name</code></em></code>.</p></div><div class="footnote"><p><sup>[<a id="ftn.idp37872208" href="#idp37872208" class="para">4</a>] </sup>Note that in
+      GHCi, and <code class="option">&#8211;&#8211;make</code> mode, the <code class="option">-i</code>
+      option is used to specify the search path for
+      <span class="emphasis"><em>source</em></span> files, whereas in standard
+      batch-compilation mode the <code class="option">-i</code> option is used to
+      specify the search path for interface files, see <a class="xref" href="separate-compilation.html#search-path" title="4.7.3. The search path">Section 4.7.3, &#8220;The search path&#8221;</a>.</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ghci.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghci.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ghci-compiled.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. Using GHCi </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 2.3. Loading compiled code</td></tr></table></div></body></html>

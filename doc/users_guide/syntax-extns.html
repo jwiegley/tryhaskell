@@ -1,0 +1,1180 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>7.3. Syntactic extensions</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghc-language-features.html" title="Chapter 7. GHC Language Features"><link rel="prev" href="primitives.html" title="7.2. Unboxed types and primitive operations"><link rel="next" href="data-type-extensions.html" title="7.4. Extensions to data types and type synonyms"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">7.3. Syntactic extensions</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="primitives.html">Prev</a> </td><th width="60%" align="center">Chapter 7. GHC Language Features</th><td width="20%" align="right"> <a accesskey="n" href="data-type-extensions.html">Next</a></td></tr></table><hr></div><div class="sect1" title="7.3. Syntactic extensions"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="syntax-extns"></a>7.3. Syntactic extensions</h2></div></div></div><div class="sect2" title="7.3.1. Unicode syntax"><div class="titlepage"><div><div><h3 class="title"><a name="unicode-syntax"></a>7.3.1. Unicode syntax</h3></div></div></div><p>The language
+      extension <code class="option">-XUnicodeSyntax</code><a class="indexterm" name="idp52330736"></a>
+      enables Unicode characters to be used to stand for certain ASCII
+      character sequences.  The following alternatives are provided:</p><div class="informaltable"><table border="1"><colgroup><col><col></colgroup><thead><tr><th align="left">ASCII</th><th align="left">Unicode alternative</th><th align="left">Code point</th><th align="left">Name</th></tr></thead><tbody><tr><td align="left"><code class="literal">::</code></td><td align="left">::</td><td align="left">0x2237</td><td align="left">PROPORTION</td></tr></tbody><tbody><tr><td align="left"><code class="literal">=&gt;</code></td><td align="left">&#8658;</td><td align="left">0x21D2</td><td align="left">RIGHTWARDS DOUBLE ARROW</td></tr></tbody><tbody><tr><td align="left"><code class="literal">forall</code></td><td align="left">&#8704;</td><td align="left">0x2200</td><td align="left">FOR ALL</td></tr></tbody><tbody><tr><td align="left"><code class="literal">-&gt;</code></td><td align="left">&#8594;</td><td align="left">0x2192</td><td align="left">RIGHTWARDS ARROW</td></tr></tbody><tbody><tr><td align="left"><code class="literal">&lt;-</code></td><td align="left">&#8592;</td><td align="left">0x2190</td><td align="left">LEFTWARDS ARROW</td></tr></tbody><tbody><tr><td align="left">-&lt;</td><td align="left">&#8610;</td><td align="left">0x2919</td><td align="left">LEFTWARDS ARROW-TAIL</td></tr></tbody><tbody><tr><td align="left">&gt;-</td><td align="left">&#8611;</td><td align="left">0x291A</td><td align="left">RIGHTWARDS ARROW-TAIL</td></tr></tbody><tbody><tr><td align="left">-&lt;&lt;</td><td align="left"> </td><td align="left">0x291B</td><td align="left">LEFTWARDS DOUBLE ARROW-TAIL</td></tr></tbody><tbody><tr><td align="left">&gt;&gt;-</td><td align="left"> </td><td align="left">0x291C</td><td align="left">RIGHTWARDS DOUBLE ARROW-TAIL</td></tr></tbody><tbody><tr><td align="left">*</td><td align="left">&#9733;</td><td align="left">0x2605</td><td align="left">BLACK STAR</td></tr></tbody></table></div></div><div class="sect2" title="7.3.2. The magic hash"><div class="titlepage"><div><div><h3 class="title"><a name="magic-hash"></a>7.3.2. The magic hash</h3></div></div></div><p>The language extension <code class="option">-XMagicHash</code> allows "#" as a
+	postfix modifier to identifiers.  Thus, "x#" is a valid variable, and "T#" is
+	a valid type constructor or data constructor.</p><p>The hash sign does not change semantics at all.  We tend to use variable
+	names ending in "#" for unboxed values or types (e.g. <code class="literal">Int#</code>),
+        but there is no requirement to do so; they are just plain ordinary variables.
+	Nor does the <code class="option">-XMagicHash</code> extension bring anything into scope.
+	For example, to bring <code class="literal">Int#</code> into scope you must
+	import <code class="literal">GHC.Prim</code> (see <a class="xref" href="primitives.html" title="7.2. Unboxed types and primitive operations">Section 7.2, &#8220;Unboxed types and primitive operations&#8221;</a>);
+	the <code class="option">-XMagicHash</code> extension
+	then allows you to <span class="emphasis"><em>refer</em></span> to the <code class="literal">Int#</code>
+	that is now in scope.</p><p> The <code class="option">-XMagicHash</code> also enables some new forms of literals (see <a class="xref" href="primitives.html#glasgow-unboxed" title="7.2.1. Unboxed types">Section 7.2.1, &#8220;Unboxed types&#8221;</a>):
+	</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p> <code class="literal">'x'#</code> has type <code class="literal">Char#</code></p></li><li class="listitem"><p> <code class="literal">"foo"#</code> has type <code class="literal">Addr#</code></p></li><li class="listitem"><p> <code class="literal">3#</code> has type <code class="literal">Int#</code>. In general,
+	  any Haskell integer lexeme followed by a <code class="literal">#</code> is an <code class="literal">Int#</code> literal, e.g.
+            <code class="literal">-0x3A#</code> as well as <code class="literal">32#</code></p>.</li><li class="listitem"><p> <code class="literal">3##</code> has type <code class="literal">Word#</code>. In general,
+	  any non-negative Haskell integer lexeme followed by <code class="literal">##</code>
+	      is a <code class="literal">Word#</code>. </p></li><li class="listitem"><p> <code class="literal">3.2#</code> has type <code class="literal">Float#</code>.</p></li><li class="listitem"><p> <code class="literal">3.2##</code> has type <code class="literal">Double#</code></p></li></ul></div><p>
+      </p></div><div class="sect2" title="7.3.3. Hierarchical Modules"><div class="titlepage"><div><div><h3 class="title"><a name="hierarchical-modules"></a>7.3.3. Hierarchical Modules</h3></div></div></div><p>GHC supports a small extension to the syntax of module
+      names: a module name is allowed to contain a dot
+      <code class="literal">&#8216;.&#8217;</code>.  This is also known as the
+      &#8220;hierarchical module namespace&#8221; extension, because
+      it extends the normally flat Haskell module namespace into a
+      more flexible hierarchy of modules.</p><p>This extension has very little impact on the language
+      itself; modules names are <span class="emphasis"><em>always</em></span> fully
+      qualified, so you can just think of the fully qualified module
+      name as <span class="quote">&#8220;<span class="quote">the module name</span>&#8221;</span>.  In particular, this
+      means that the full module name must be given after the
+      <code class="literal">module</code> keyword at the beginning of the
+      module; for example, the module <code class="literal">A.B.C</code> must
+      begin</p><pre class="programlisting">module A.B.C</pre><p>It is a common strategy to use the <code class="literal">as</code>
+      keyword to save some typing when using qualified names with
+      hierarchical modules.  For example:</p><pre class="programlisting">
+import qualified Control.Monad.ST.Strict as ST
+</pre><p>For details on how GHC searches for source and interface
+      files in the presence of hierarchical modules, see <a class="xref" href="separate-compilation.html#search-path" title="4.7.3. The search path">Section 4.7.3, &#8220;The search path&#8221;</a>.</p><p>GHC comes with a large collection of libraries arranged
+      hierarchically; see the accompanying <a class="ulink" href="../libraries/index.html" target="_top">library
+      documentation</a>.  More libraries to install are available
+      from <a class="ulink" href="http://hackage.haskell.org/packages/hackage.html" target="_top">HackageDB</a>.</p></div><div class="sect2" title="7.3.4. Pattern guards"><div class="titlepage"><div><div><h3 class="title"><a name="pattern-guards"></a>7.3.4. Pattern guards</h3></div></div></div><p>
+<a class="indexterm" name="idp52400512"></a>
+The discussion that follows is an abbreviated version of Simon Peyton Jones's original <a class="ulink" href="http://research.microsoft.com/~simonpj/Haskell/guards.html" target="_top">proposal</a>. (Note that the proposal was written before pattern guards were implemented, so refers to them as unimplemented.)
+</p><p>
+Suppose we have an abstract data type of finite maps, with a
+lookup operation:
+
+</p><pre class="programlisting">
+lookup :: FiniteMap -&gt; Int -&gt; Maybe Int
+</pre><p>
+
+The lookup returns <code class="function">Nothing</code> if the supplied key is not in the domain of the mapping, and <code class="function">(Just v)</code> otherwise,
+where <code class="varname">v</code> is the value that the key maps to.  Now consider the following definition:
+</p><pre class="programlisting">
+clunky env var1 var2 | ok1 &amp;&amp; ok2 = val1 + val2
+| otherwise  = var1 + var2
+where
+  m1 = lookup env var1
+  m2 = lookup env var2
+  ok1 = maybeToBool m1
+  ok2 = maybeToBool m2
+  val1 = expectJust m1
+  val2 = expectJust m2
+</pre><p>
+The auxiliary functions are
+</p><pre class="programlisting">
+maybeToBool :: Maybe a -&gt; Bool
+maybeToBool (Just x) = True
+maybeToBool Nothing  = False
+
+expectJust :: Maybe a -&gt; a
+expectJust (Just x) = x
+expectJust Nothing  = error "Unexpected Nothing"
+</pre><p>
+What is <code class="function">clunky</code> doing? The guard <code class="literal">ok1 &amp;&amp;
+ok2</code> checks that both lookups succeed, using
+<code class="function">maybeToBool</code> to convert the <code class="function">Maybe</code>
+types to booleans. The (lazily evaluated) <code class="function">expectJust</code>
+calls extract the values from the results of the lookups, and binds the
+returned values to <code class="varname">val1</code> and <code class="varname">val2</code>
+respectively.  If either lookup fails, then clunky takes the
+<code class="literal">otherwise</code> case and returns the sum of its arguments.
+</p><p>
+This is certainly legal Haskell, but it is a tremendously verbose and
+un-obvious way to achieve the desired effect.  Arguably, a more direct way
+to write clunky would be to use case expressions:
+</p><pre class="programlisting">
+clunky env var1 var2 = case lookup env var1 of
+  Nothing -&gt; fail
+  Just val1 -&gt; case lookup env var2 of
+    Nothing -&gt; fail
+    Just val2 -&gt; val1 + val2
+where
+  fail = var1 + var2
+</pre><p>
+This is a bit shorter, but hardly better.  Of course, we can rewrite any set
+of pattern-matching, guarded equations as case expressions; that is
+precisely what the compiler does when compiling equations! The reason that
+Haskell provides guarded equations is because they allow us to write down
+the cases we want to consider, one at a time, independently of each other.
+This structure is hidden in the case version.  Two of the right-hand sides
+are really the same (<code class="function">fail</code>), and the whole expression
+tends to become more and more indented.
+</p><p>
+Here is how I would write clunky:
+</p><pre class="programlisting">
+clunky env var1 var2
+  | Just val1 &lt;- lookup env var1
+  , Just val2 &lt;- lookup env var2
+  = val1 + val2
+...other equations for clunky...
+</pre><p>
+The semantics should be clear enough.  The qualifiers are matched in order.
+For a <code class="literal">&lt;-</code> qualifier, which I call a pattern guard, the
+right hand side is evaluated and matched against the pattern on the left.
+If the match fails then the whole guard fails and the next equation is
+tried.  If it succeeds, then the appropriate binding takes place, and the
+next qualifier is matched, in the augmented environment.  Unlike list
+comprehensions, however, the type of the expression to the right of the
+<code class="literal">&lt;-</code> is the same as the type of the pattern to its
+left.  The bindings introduced by pattern guards scope over all the
+remaining guard qualifiers, and over the right hand side of the equation.
+</p><p>
+Just as with list comprehensions, boolean expressions can be freely mixed
+with among the pattern guards.  For example:
+</p><pre class="programlisting">
+f x | [y] &lt;- x
+    , y &gt; 3
+    , Just z &lt;- h y
+    = ...
+</pre><p>
+Haskell's current guards therefore emerge as a special case, in which the
+qualifier list has just one element, a boolean expression.
+</p></div><div class="sect2" title="7.3.5. View patterns"><div class="titlepage"><div><div><h3 class="title"><a name="view-patterns"></a>7.3.5. View patterns
+</h3></div></div></div><p>
+View patterns are enabled by the flag <code class="literal">-XViewPatterns</code>.
+More information and examples of view patterns can be found on the
+<a class="ulink" href="http://hackage.haskell.org/trac/ghc/wiki/ViewPatterns" target="_top">Wiki
+page</a>.
+</p><p>
+View patterns are somewhat like pattern guards that can be nested inside
+of other patterns.  They are a convenient way of pattern-matching
+against values of abstract types. For example, in a programming language
+implementation, we might represent the syntax of the types of the
+language as follows:
+
+</p><pre class="programlisting">
+type Typ
+
+data TypView = Unit
+             | Arrow Typ Typ
+
+view :: Typ -&gt; TypView
+
+-- additional operations for constructing Typ's ...
+</pre><p>
+
+The representation of Typ is held abstract, permitting implementations
+to use a fancy representation (e.g., hash-consing to manage sharing).
+
+Without view patterns, using this signature a little inconvenient:
+</p><pre class="programlisting">
+size :: Typ -&gt; Integer
+size t = case view t of
+  Unit -&gt; 1
+  Arrow t1 t2 -&gt; size t1 + size t2
+</pre><p>
+
+It is necessary to iterate the case, rather than using an equational
+function definition. And the situation is even worse when the matching
+against <code class="literal">t</code> is buried deep inside another pattern.
+</p><p>
+View patterns permit calling the view function inside the pattern and
+matching against the result:
+</p><pre class="programlisting">
+size (view -&gt; Unit) = 1
+size (view -&gt; Arrow t1 t2) = size t1 + size t2
+</pre><p>
+
+That is, we add a new form of pattern, written
+<em class="replaceable"><code>expression</code></em> <code class="literal">-&gt;</code>
+<em class="replaceable"><code>pattern</code></em> that means "apply the expression to
+whatever we're trying to match against, and then match the result of
+that application against the pattern". The expression can be any Haskell
+expression of function type, and view patterns can be used wherever
+patterns are used.
+</p><p>
+The semantics of a pattern <code class="literal">(</code>
+<em class="replaceable"><code>exp</code></em> <code class="literal">-&gt;</code>
+<em class="replaceable"><code>pat</code></em> <code class="literal">)</code> are as follows:
+
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"> Scoping:
+
+<p>The variables bound by the view pattern are the variables bound by
+<em class="replaceable"><code>pat</code></em>.
+</p><p>
+Any variables in <em class="replaceable"><code>exp</code></em> are bound occurrences,
+but variables bound "to the left" in a pattern are in scope.  This
+feature permits, for example, one argument to a function to be used in
+the view of another argument.  For example, the function
+<code class="literal">clunky</code> from <a class="xref" href="syntax-extns.html#pattern-guards" title="7.3.4. Pattern guards">Section 7.3.4, &#8220;Pattern guards&#8221;</a> can be
+written using view patterns as follows:
+
+</p><pre class="programlisting">
+clunky env (lookup env -&gt; Just val1) (lookup env -&gt; Just val2) = val1 + val2
+...other equations for clunky...
+</pre><p>
+</p><p>
+More precisely, the scoping rules are:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>
+In a single pattern, variables bound by patterns to the left of a view
+pattern expression are in scope. For example:
+</p><pre class="programlisting">
+example :: Maybe ((String -&gt; Integer,Integer), String) -&gt; Bool
+example Just ((f,_), f -&gt; 4) = True
+</pre><p>
+
+Additionally, in function definitions, variables bound by matching earlier curried
+arguments may be used in view pattern expressions in later arguments:
+</p><pre class="programlisting">
+example :: (String -&gt; Integer) -&gt; String -&gt; Bool
+example f (f -&gt; 4) = True
+</pre><p>
+That is, the scoping is the same as it would be if the curried arguments
+were collected into a tuple.
+</p></li><li class="listitem"><p>
+In mutually recursive bindings, such as <code class="literal">let</code>,
+<code class="literal">where</code>, or the top level, view patterns in one
+declaration may not mention variables bound by other declarations.  That
+is, each declaration must be self-contained.  For example, the following
+program is not allowed:
+</p><pre class="programlisting">
+let {(x -&gt; y) = e1 ;
+     (y -&gt; x) = e2 } in x
+</pre><p>
+
+(For some amplification on this design choice see
+<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/4061" target="_top">Trac #4061</a>.)
+
+</p></li></ul></div><p>
+
+</p></li><li class="listitem"><p> Typing: If <em class="replaceable"><code>exp</code></em> has type
+<em class="replaceable"><code>T1</code></em> <code class="literal">-&gt;</code>
+<em class="replaceable"><code>T2</code></em> and <em class="replaceable"><code>pat</code></em> matches
+a <em class="replaceable"><code>T2</code></em>, then the whole view pattern matches a
+<em class="replaceable"><code>T1</code></em>.
+</p></li><li class="listitem"><p> Matching: To the equations in Section 3.17.3 of the
+<a class="ulink" href="http://www.haskell.org/onlinereport/" target="_top">Haskell 98
+Report</a>, add the following:
+</p><pre class="programlisting">
+case v of { (e -&gt; p) -&gt; e1 ; _ -&gt; e2 }
+ =
+case (e v) of { p -&gt; e1 ; _ -&gt; e2 }
+</pre><p>
+That is, to match a variable <em class="replaceable"><code>v</code></em> against a pattern
+<code class="literal">(</code> <em class="replaceable"><code>exp</code></em>
+<code class="literal">-&gt;</code> <em class="replaceable"><code>pat</code></em>
+<code class="literal">)</code>, evaluate <code class="literal">(</code>
+<em class="replaceable"><code>exp</code></em> <em class="replaceable"><code> v</code></em>
+<code class="literal">)</code> and match the result against
+<em class="replaceable"><code>pat</code></em>.
+</p></li><li class="listitem"><p> Efficiency: When the same view function is applied in
+multiple branches of a function definition or a case expression (e.g.,
+in <code class="literal">size</code> above), GHC makes an attempt to collect these
+applications into a single nested case expression, so that the view
+function is only applied once.  Pattern compilation in GHC follows the
+matrix algorithm described in Chapter 4 of <a class="ulink" href="http://research.microsoft.com/~simonpj/Papers/slpj-book-1987/" target="_top">The
+Implementation of Functional Programming Languages</a>.  When the
+top rows of the first column of a matrix are all view patterns with the
+"same" expression, these patterns are transformed into a single nested
+case.  This includes, for example, adjacent view patterns that line up
+in a tuple, as in
+</p><pre class="programlisting">
+f ((view -&gt; A, p1), p2) = e1
+f ((view -&gt; B, p3), p4) = e2
+</pre><p>
+</p><p> The current notion of when two view pattern expressions are "the
+same" is very restricted: it is not even full syntactic equality.
+However, it does include variables, literals, applications, and tuples;
+e.g., two instances of <code class="literal">view ("hi", "there")</code> will be
+collected.  However, the current implementation does not compare up to
+alpha-equivalence, so two instances of <code class="literal">(x, view x -&gt;
+y)</code> will not be coalesced.
+</p></li></ul></div><p>
+</p></div><div class="sect2" title="7.3.6. n+k patterns"><div class="titlepage"><div><div><h3 class="title"><a name="n-k-patterns"></a>7.3.6. n+k patterns</h3></div></div></div><a class="indexterm" name="idp52464544"></a><p>
+<code class="literal">n+k</code> pattern support is disabled by default. To enable
+it, you can use the <code class="option">-XNPlusKPatterns</code> flag.
+</p></div><div class="sect2" title="7.3.7. Traditional record syntax"><div class="titlepage"><div><div><h3 class="title"><a name="traditional-record-syntax"></a>7.3.7. Traditional record syntax</h3></div></div></div><a class="indexterm" name="idp52468480"></a><p>
+Traditional record syntax, such as <code class="literal">C {f = x}</code>, is enabled by default.
+To disable it, you can use the <code class="option">-XNoTraditionalRecordSyntax</code> flag.
+</p></div><div class="sect2" title="7.3.8. The recursive do-notation"><div class="titlepage"><div><div><h3 class="title"><a name="recursive-do-notation"></a>7.3.8. The recursive do-notation
+</h3></div></div></div><p>
+    The do-notation of Haskell 98 does not allow <span class="emphasis"><em>recursive bindings</em></span>,
+    that is, the variables bound in a do-expression are visible only in the textually following
+    code block. Compare this to a let-expression, where bound variables are visible in the entire binding
+    group. 
+</p><p> 
+    It turns out that such recursive bindings do indeed make sense for a variety of monads, but
+    not all. In particular, recursion in this sense requires a fixed-point operator for the underlying
+    monad, captured by the <code class="literal">mfix</code> method of the <code class="literal">MonadFix</code> class, defined in <code class="literal">Control.Monad.Fix</code> as follows:
+</p><pre class="programlisting">
+class Monad m =&gt; MonadFix m where
+   mfix :: (a -&gt; m a) -&gt; m a
+</pre><p>
+    Haskell's
+    <code class="literal">Maybe</code>, <code class="literal">[]</code> (list), <code class="literal">ST</code> (both strict and lazy versions),
+    <code class="literal">IO</code>, and many other monads have <code class="literal">MonadFix</code> instances. On the negative
+    side, the continuation monad, with the signature <code class="literal">(a -&gt; r) -&gt; r</code>, does not.
+</p><p>
+    For monads that do belong to the <code class="literal">MonadFix</code> class, GHC provides
+    an extended version of the do-notation that allows recursive bindings.
+    The <code class="option">-XRecursiveDo</code> (language pragma: <code class="literal">RecursiveDo</code>)
+    provides the necessary syntactic support, introducing the keywords <code class="literal">mdo</code> and
+    <code class="literal">rec</code> for higher and lower levels of the notation respectively. Unlike
+    bindings in a <code class="literal">do</code> expression, those introduced by <code class="literal">mdo</code> and <code class="literal">rec</code>
+    are recursively defined, much like in an ordinary let-expression. Due to the new
+    keyword <code class="literal">mdo</code>, we also call this notation the <span class="emphasis"><em>mdo-notation</em></span>.
+</p><p>
+    Here is a simple (albeit contrived) example:
+</p><pre class="programlisting">
+{-# LANGUAGE RecursiveDo #-}
+justOnes = mdo { xs &lt;- Just (1:xs)
+               ; return (map negate xs) }
+</pre><p>
+or equivalently
+</p><pre class="programlisting">
+{-# LANGUAGE RecursiveDo #-}
+justOnes = do { rec { xs &lt;- Just (1:xs) }
+              ; return (map negate xs) }
+</pre><p>
+As you can guess <code class="literal">justOnes</code> will evaluate to <code class="literal">Just [-1,-1,-1,...</code>.
+</p><p> 
+   GHC's implementation the mdo-notation closely follows the original translation as described in the paper
+   <a class="ulink" href="https://sites.google.com/site/leventerkok/recdo.pdf" target="_top">A recursive do for Haskell</a>, which
+   in turn is based on the work <a class="ulink" href="http://sites.google.com/site/leventerkok/erkok-thesis.pdf" target="_top">Value Recursion
+   in Monadic Computations</a>. Furthermore, GHC extends the syntax described in the former paper
+   with a lower level syntax flagged by the <code class="literal">rec</code> keyword, as we describe next.
+</p><div class="sect3" title="7.3.8.1. Recursive binding groups"><div class="titlepage"><div><div><h4 class="title"><a name="idp52493968"></a>7.3.8.1. Recursive binding groups</h4></div></div></div><p>
+    The flag <code class="option">-XRecursiveDo</code> also introduces a new keyword <code class="literal">rec</code>, which wraps a
+    mutually-recursive group of monadic statements inside a <code class="literal">do</code> expression, producing a single statement.
+    Similar to a <code class="literal">let</code> statement inside a <code class="literal">do</code>, variables bound in
+    the <code class="literal">rec</code> are visible throughout the <code class="literal">rec</code> group, and below it.  For example, compare
+</p><pre class="programlisting">
+    do { a &lt;- getChar            do { a &lt;- getChar
+       ; let { r1 = f a r2          ; rec { r1 &lt;- f a r2
+       ;     ; r2 = g r1 }          ;     ; r2 &lt;- g r1 }
+       ; return (r1 ++ r2) }        ; return (r1 ++ r2) }
+</pre><p>
+    In both cases, <code class="literal">r1</code> and <code class="literal">r2</code> are available both throughout
+    the <code class="literal">let</code> or <code class="literal">rec</code> block, and in the statements that follow it.
+    The difference is that <code class="literal">let</code> is non-monadic, while <code class="literal">rec</code> is monadic.
+    (In Haskell <code class="literal">let</code> is really <code class="literal">letrec</code>, of course.)
+</p><p>
+    The semantics of <code class="literal">rec</code> is fairly straightforward. Whenever GHC finds a <code class="literal">rec</code>
+    group, it will compute its set of bound variables, and will introduce an appropriate call
+    to the underlying monadic value-recursion operator <code class="literal">mfix</code>, belonging to the
+    <code class="literal">MonadFix</code> class. Here is an example:
+</p><pre class="programlisting">
+rec { b &lt;- f a c     ===&gt;    (b,c) &lt;- mfix (\~(b,c) -&gt; do { b &lt;- f a c
+    ; c &lt;- f b a }                                        ; c &lt;- f b a
+                                                          ; return (b,c) })
+</pre><p>
+   As usual, the meta-variables <code class="literal">b</code>, <code class="literal">c</code> etc., can be arbitrary patterns.
+   In general, the statement <code class="literal">rec <em class="replaceable"><code>ss</code></em></code> is desugared to the statement
+</p><pre class="programlisting">
+<em class="replaceable"><code>vs</code></em> &lt;- mfix (\~<em class="replaceable"><code>vs</code></em> -&gt; do { <em class="replaceable"><code>ss</code></em>; return <em class="replaceable"><code>vs</code></em> })
+</pre><p>
+  where <em class="replaceable"><code>vs</code></em> is a tuple of the variables bound by <em class="replaceable"><code>ss</code></em>.
+</p><p>
+    Note in particular that the translation for a <code class="literal">rec</code> block only involves wrapping a call
+    to <code class="literal">mfix</code>: it performs no other analysis on the bindings. The latter is the task
+    for the <code class="literal">mdo</code> notation, which is described next.
+</p></div><div class="sect3" title="7.3.8.2. The mdo notation"><div class="titlepage"><div><div><h4 class="title"><a name="idp52518016"></a>7.3.8.2. The <code class="literal">mdo</code> notation</h4></div></div></div><p>
+    A <code class="literal">rec</code>-block tells the compiler where precisely the recursive knot should be tied. It turns out that
+    the placement of the recursive knots can be rather delicate: in particular, we would like the knots to be wrapped
+    around as minimal groups as possible. This process is known as <span class="emphasis"><em>segmentation</em></span>, and is described
+    in detail in Secton 3.2 of <a class="ulink" href="https://sites.google.com/site/leventerkok/recdo.pdf" target="_top">A recursive do for
+    Haskell</a>. Segmentation improves polymorphism and reduces the size of the recursive knot. Most importantly, it avoids
+    unnecessary interference caused by a fundamental issue with the so-called <span class="emphasis"><em>right-shrinking</em></span>
+    axiom for monadic recursion. In brief, most monads of interest (IO, strict state, etc.) do <span class="emphasis"><em>not</em></span>
+    have recursion operators that satisfy this axiom, and thus not performing segmentation can cause unnecessary
+    interference, changing the termination behavior of the resulting translation.
+    (Details can be found in Sections 3.1 and 7.2.2 of
+    <a class="ulink" href="http://sites.google.com/site/leventerkok/erkok-thesis.pdf" target="_top">Value Recursion in Monadic Computations</a>.)
+</p><p>
+    The <code class="literal">mdo</code> notation removes the burden of placing
+    explicit <code class="literal">rec</code> blocks in the code.  Unlike an
+    ordinary <code class="literal">do</code> expression, in which variables bound by
+    statements are only in scope for later statements, variables bound in
+    an <code class="literal">mdo</code> expression are in scope for all statements
+    of the expression.  The compiler then automatically identifies minimal
+    mutually recursively dependent segments of statements, treating them as
+    if the user had wrapped a <code class="literal">rec</code> qualifier around them.
+</p><p>
+   The definition is syntactic:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+         A generator <em class="replaceable"><code>g</code></em>
+         <span class="emphasis"><em>depends</em></span> on a textually following generator
+         <em class="replaceable"><code>g'</code></em>, if
+       </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>
+             <em class="replaceable"><code>g'</code></em> defines a variable that
+             is used by <em class="replaceable"><code>g</code></em>, or
+           </p></li><li class="listitem"><p>
+           <em class="replaceable"><code>g'</code></em> textually appears between
+           <em class="replaceable"><code>g</code></em> and
+           <em class="replaceable"><code>g''</code></em>, where <em class="replaceable"><code>g</code></em>
+           depends on <em class="replaceable"><code>g''</code></em>.
+           </p></li></ul></div></li><li class="listitem"><p>
+         A <span class="emphasis"><em>segment</em></span> of a given
+         <code class="literal">mdo</code>-expression is a minimal sequence of generators
+         such that no generator of the sequence depends on an outside
+         generator. As a special case, although it is not a generator,
+         the final expression in an <code class="literal">mdo</code>-expression is
+         considered to form a segment by itself.
+       </p></li></ul></div><p>
+   Segments in this sense are
+   related to <span class="emphasis"><em>strongly-connected components</em></span> analysis,
+   with the exception that bindings in a segment cannot be reordered and
+   must be contiguous.
+</p><p>
+    Here is an example <code class="literal">mdo</code>-expression, and its translation to <code class="literal">rec</code> blocks:
+</p><pre class="programlisting">
+mdo { a &lt;- getChar      ===&gt; do { a &lt;- getChar
+    ; b &lt;- f a c                ; rec { b &lt;- f a c
+    ; c &lt;- f b a                ;     ; c &lt;- f b a }
+    ; z &lt;- h a b                ; z &lt;- h a b
+    ; d &lt;- g d e                ; rec { d &lt;- g d e
+    ; e &lt;- g a z                ;     ; e &lt;- g a z }
+    ; putChar c }               ; putChar c }
+</pre><p>
+Note that a given <code class="literal">mdo</code> expression can cause the creation of multiple <code class="literal">rec</code> blocks.
+If there are no recursive dependencies, <code class="literal">mdo</code> will introduce no <code class="literal">rec</code> blocks. In this
+latter case an <code class="literal">mdo</code> expression is precisely the same as a <code class="literal">do</code> expression, as one
+would expect.
+</p><p>
+    In summary, given an <code class="literal">mdo</code> expression, GHC first performs segmentation, introducing
+    <code class="literal">rec</code> blocks to wrap over minimal recursive groups. Then, each resulting
+    <code class="literal">rec</code> is desugared, using a call to <code class="literal">Control.Monad.Fix.mfix</code> as described
+    in the previous section. The original <code class="literal">mdo</code>-expression typechecks exactly when the desugared
+    version would do so.
+</p><p>
+Here are some other important points in using the recursive-do notation:
+
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+            It is enabled with the flag <code class="literal">-XRecursiveDo</code>, or the <code class="literal">LANGUAGE RecursiveDo</code>
+            pragma. (The same flag enables both <code class="literal">mdo</code>-notation, and the use of <code class="literal">rec</code>
+            blocks inside <code class="literal">do</code> expressions.)
+        </p></li><li class="listitem"><p>
+            <code class="literal">rec</code> blocks can also be used inside <code class="literal">mdo</code>-expressions, which will be
+            treated as a single statement. However, it is good style to either use <code class="literal">mdo</code> or
+            <code class="literal">rec</code> blocks in a single expression.
+        </p></li><li class="listitem"><p>
+            If recursive bindings are required for a monad, then that monad must be declared an instance of
+            the <code class="literal">MonadFix</code> class.
+        </p></li><li class="listitem"><p>
+            The following instances of <code class="literal">MonadFix</code> are automatically provided: List, Maybe, IO.
+            Furthermore, the <code class="literal">Control.Monad.ST</code> and <code class="literal">Control.Monad.ST.Lazy</code>
+            modules provide the instances of the <code class="literal">MonadFix</code> class for Haskell's internal
+            state monad (strict and lazy, respectively).
+        </p></li><li class="listitem"><p>
+            Like <code class="literal">let</code> and <code class="literal">where</code> bindings, name shadowing is not allowed within
+            an <code class="literal">mdo</code>-expression or a <code class="literal">rec</code>-block; that is, all the names bound in
+            a single <code class="literal">rec</code> must be distinct. (GHC will complain if this is not the case.)
+        </p></li></ul></div><p>
+</p></div></div><div class="sect2" title="7.3.9. Parallel List Comprehensions"><div class="titlepage"><div><div><h3 class="title"><a name="parallel-list-comprehensions"></a>7.3.9. Parallel List Comprehensions</h3></div></div></div><a class="indexterm" name="idp52569840"></a><a class="indexterm" name="idp52570960"></a><p>Parallel list comprehensions are a natural extension to list
+    comprehensions.  List comprehensions can be thought of as a nice
+    syntax for writing maps and filters.  Parallel comprehensions
+    extend this to include the zipWith family.</p><p>A parallel list comprehension has multiple independent
+    branches of qualifier lists, each separated by a `|' symbol.  For
+    example, the following zips together two lists:</p><pre class="programlisting">
+   [ (x, y) | x &lt;- xs | y &lt;- ys ]
+</pre><p>The behaviour of parallel list comprehensions follows that of
+    zip, in that the resulting list will have the same length as the
+    shortest branch.</p><p>We can define parallel list comprehensions by translation to
+    regular comprehensions.  Here's the basic idea:</p><p>Given a parallel comprehension of the form: </p><pre class="programlisting">
+   [ e | p1 &lt;- e11, p2 &lt;- e12, ...
+       | q1 &lt;- e21, q2 &lt;- e22, ...
+       ...
+   ]
+</pre><p>This will be translated to: </p><pre class="programlisting">
+   [ e | ((p1,p2), (q1,q2), ...) &lt;- zipN [(p1,p2) | p1 &lt;- e11, p2 &lt;- e12, ...]
+                                         [(q1,q2) | q1 &lt;- e21, q2 &lt;- e22, ...]
+                                         ...
+   ]
+</pre><p>where `zipN' is the appropriate zip for the given number of
+    branches.</p></div><div class="sect2" title="7.3.10. Generalised (SQL-Like) List Comprehensions"><div class="titlepage"><div><div><h3 class="title"><a name="generalised-list-comprehensions"></a>7.3.10. Generalised (SQL-Like) List Comprehensions</h3></div></div></div><a class="indexterm" name="idp52579312"></a><a class="indexterm" name="idp52580432"></a><a class="indexterm" name="idp52581344"></a><a class="indexterm" name="idp52582112"></a><p>Generalised list comprehensions are a further enhancement to the
+    list comprehension syntactic sugar to allow operations such as sorting
+    and grouping which are familiar from SQL.   They are fully described in the
+	paper <a class="ulink" href="http://research.microsoft.com/~simonpj/papers/list-comp" target="_top">
+	  Comprehensive comprehensions: comprehensions with "order by" and "group by"</a>,
+    except that the syntax we use differs slightly from the paper.</p><p>The extension is enabled with the flag <code class="option">-XTransformListComp</code>.</p><p>Here is an example:
+</p><pre class="programlisting">
+employees = [ ("Simon", "MS", 80)
+, ("Erik", "MS", 100)
+, ("Phil", "Ed", 40)
+, ("Gordon", "Ed", 45)
+, ("Paul", "Yale", 60)]
+
+output = [ (the dept, sum salary)
+| (name, dept, salary) &lt;- employees
+, then group by dept using groupWith
+, then sortWith by (sum salary)
+, then take 5 ]
+</pre><p>
+In this example, the list <code class="literal">output</code> would take on
+    the value:
+
+</p><pre class="programlisting">
+[("Yale", 60), ("Ed", 85), ("MS", 180)]
+</pre><p>
+</p><p>There are three new keywords: <code class="literal">group</code>, <code class="literal">by</code>, and <code class="literal">using</code>.
+(The functions <code class="literal">sortWith</code> and <code class="literal">groupWith</code> are not keywords; they are ordinary
+functions that are exported by <code class="literal">GHC.Exts</code>.)</p><p>There are five new forms of comprehension qualifier,
+all introduced by the (existing) keyword <code class="literal">then</code>:
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><pre class="programlisting">
+then f
+</pre>
+
+    This statement requires that <code class="literal">f</code> have the type <code class="literal">
+    forall a. [a] -&gt; [a]</code>. You can see an example of its use in the
+    motivating example, as this form is used to apply <code class="literal">take 5</code>.
+
+    </li><li class="listitem"><p>
+</p><pre class="programlisting">
+then f by e
+</pre><p>
+
+    This form is similar to the previous one, but allows you to create a function
+    which will be passed as the first argument to f. As a consequence f must have
+    the type <code class="literal">forall a. (a -&gt; t) -&gt; [a] -&gt; [a]</code>. As you can see
+    from the type, this function lets f "project out" some information
+    from the elements of the list it is transforming.</p><p>An example is shown in the opening example, where <code class="literal">sortWith</code>
+    is supplied with a function that lets it find out the <code class="literal">sum salary</code>
+    for any item in the list comprehension it transforms.</p></li><li class="listitem"><pre class="programlisting">
+then group by e using f
+</pre><p>This is the most general of the grouping-type statements. In this form,
+    f is required to have type <code class="literal">forall a. (a -&gt; t) -&gt; [a] -&gt; [[a]]</code>.
+    As with the <code class="literal">then f by e</code> case above, the first argument
+    is a function supplied to f by the compiler which lets it compute e on every
+    element of the list being transformed. However, unlike the non-grouping case,
+    f additionally partitions the list into a number of sublists: this means that
+    at every point after this statement, binders occurring before it in the comprehension
+    refer to <span class="emphasis"><em>lists</em></span> of possible values, not single values. To help understand
+    this, let's look at an example:</p><pre class="programlisting">
+-- This works similarly to groupWith in GHC.Exts, but doesn't sort its input first
+groupRuns :: Eq b =&gt; (a -&gt; b) -&gt; [a] -&gt; [[a]]
+groupRuns f = groupBy (\x y -&gt; f x == f y)
+
+output = [ (the x, y)
+| x &lt;- ([1..3] ++ [1..2])
+, y &lt;- [4..6]
+, then group by x using groupRuns ]
+</pre><p>This results in the variable <code class="literal">output</code> taking on the value below:</p><pre class="programlisting">
+[(1, [4, 5, 6]), (2, [4, 5, 6]), (3, [4, 5, 6]), (1, [4, 5, 6]), (2, [4, 5, 6])]
+</pre><p>Note that we have used the <code class="literal">the</code> function to change the type
+    of x from a list to its original numeric type. The variable y, in contrast, is left
+    unchanged from the list form introduced by the grouping.</p></li><li class="listitem"><pre class="programlisting">
+then group using f
+</pre><p>With this form of the group statement, f is required to simply have the type
+    <code class="literal">forall a. [a] -&gt; [[a]]</code>, which will be used to group up the
+    comprehension so far directly. An example of this form is as follows:</p><pre class="programlisting">
+output = [ x
+| y &lt;- [1..5]
+, x &lt;- "hello"
+, then group using inits]
+</pre><p>This will yield a list containing every prefix of the word "hello" written out 5 times:</p><pre class="programlisting">
+["","h","he","hel","hell","hello","helloh","hellohe","hellohel","hellohell","hellohello","hellohelloh",...]
+</pre></li></ul></div><p>
+</p></div><div class="sect2" title="7.3.11. Monad comprehensions"><div class="titlepage"><div><div><h3 class="title"><a name="monad-comprehensions"></a>7.3.11. Monad comprehensions</h3></div></div></div><a class="indexterm" name="idp52615776"></a><p>
+        Monad comprehensions generalise the list comprehension notation,
+        including parallel comprehensions
+        (<a class="xref" href="syntax-extns.html#parallel-list-comprehensions" title="7.3.9. Parallel List Comprehensions">Section 7.3.9, &#8220;Parallel List Comprehensions&#8221;</a>) and
+        transform comprehensions (<a class="xref" href="syntax-extns.html#generalised-list-comprehensions" title="7.3.10. Generalised (SQL-Like) List Comprehensions">Section 7.3.10, &#8220;Generalised (SQL-Like) List Comprehensions&#8221;</a>)
+        to work for any monad.
+    </p><p>Monad comprehensions support:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                Bindings:
+            </p><pre class="programlisting">
+[ x + y | x &lt;- Just 1, y &lt;- Just 2 ]
+</pre><p>
+                Bindings are translated with the <code class="literal">(&gt;&gt;=)</code> and
+                <code class="literal">return</code> functions to the usual do-notation:
+            </p><pre class="programlisting">
+do x &lt;- Just 1
+   y &lt;- Just 2
+   return (x+y)
+</pre></li><li class="listitem"><p>
+                Guards:
+            </p><pre class="programlisting">
+[ x | x &lt;- [1..10], x &lt;= 5 ]
+</pre><p>
+                Guards are translated with the <code class="literal">guard</code> function,
+                which requires a <code class="literal">MonadPlus</code> instance:
+            </p><pre class="programlisting">
+do x &lt;- [1..10]
+   guard (x &lt;= 5)
+   return x
+</pre></li><li class="listitem"><p>
+                Transform statements (as with <code class="literal">-XTransformListComp</code>):
+            </p><pre class="programlisting">
+[ x+y | x &lt;- [1..10], y &lt;- [1..x], then take 2 ]
+</pre><p>
+                This translates to:
+            </p><pre class="programlisting">
+do (x,y) &lt;- take 2 (do x &lt;- [1..10]
+                       y &lt;- [1..x]
+                       return (x,y))
+   return (x+y)
+</pre></li><li class="listitem"><p>
+                Group statements (as with <code class="literal">-XTransformListComp</code>):
+            </p><pre class="programlisting">
+[ x | x &lt;- [1,1,2,2,3], then group by x using GHC.Exts.groupWith ]
+[ x | x &lt;- [1,1,2,2,3], then group using myGroup ]
+</pre></li><li class="listitem"><p>
+                Parallel statements (as with <code class="literal">-XParallelListComp</code>):
+            </p><pre class="programlisting">
+[ (x+y) | x &lt;- [1..10]
+        | y &lt;- [11..20]
+        ]
+</pre><p>
+                Parallel statements are translated using the
+                <code class="literal">mzip</code> function, which requires a
+                <code class="literal">MonadZip</code> instance defined in
+                <a class="ulink" href="../libraries/base-4.6.0.1/Control-Monad-Zip.html" target="_top"><code class="literal">Control.Monad.Zip</code></a>:
+            </p><pre class="programlisting">
+do (x,y) &lt;- mzip (do x &lt;- [1..10]
+                     return x)
+                 (do y &lt;- [11..20]
+                     return y)
+   return (x+y)
+</pre></li></ul></div><p>
+        All these features are enabled by default if the
+        <code class="literal">MonadComprehensions</code> extension is enabled. The types
+        and more detailed examples on how to use comprehensions are explained
+        in the previous chapters <a class="xref" href="syntax-extns.html#generalised-list-comprehensions" title="7.3.10. Generalised (SQL-Like) List Comprehensions">Section 7.3.10, &#8220;Generalised (SQL-Like) List Comprehensions&#8221;</a> and <a class="xref" href="syntax-extns.html#parallel-list-comprehensions" title="7.3.9. Parallel List Comprehensions">Section 7.3.9, &#8220;Parallel List Comprehensions&#8221;</a>. In general you just have
+        to replace the type <code class="literal">[a]</code> with the type
+        <code class="literal">Monad m =&gt; m a</code> for monad comprehensions.
+    </p><p>
+        Note: Even though most of these examples are using the list monad,
+        monad comprehensions work for any monad.
+        The <code class="literal">base</code> package offers all necessary instances for
+        lists, which make <code class="literal">MonadComprehensions</code> backward
+        compatible to built-in, transform and parallel list comprehensions.
+    </p><p> More formally, the desugaring is as follows.  We write <code class="literal">D[ e | Q]</code>
+to mean the desugaring of the monad comprehension <code class="literal">[ e | Q]</code>:
+</p><pre class="programlisting">
+Expressions: e
+Declarations: d
+Lists of qualifiers: Q,R,S
+
+-- Basic forms
+D[ e | ]               = return e
+D[ e | p &lt;- e, Q ]  = e &gt;&gt;= \p -&gt; D[ e | Q ]
+D[ e | e, Q ]          = guard e &gt;&gt; \p -&gt; D[ e | Q ]
+D[ e | let d, Q ]      = let d in D[ e | Q ]
+
+-- Parallel comprehensions (iterate for multiple parallel branches)
+D[ e | (Q | R), S ]    = mzip D[ Qv | Q ] D[ Rv | R ] &gt;&gt;= \(Qv,Rv) -&gt; D[ e | S ]
+
+-- Transform comprehensions
+D[ e | Q then f, R ]                  = f D[ Qv | Q ] &gt;&gt;= \Qv -&gt; D[ e | R ]
+
+D[ e | Q then f by b, R ]             = f (\Qv -&gt; b) D[ Qv | Q ] &gt;&gt;= \Qv -&gt; D[ e | R ]
+
+D[ e | Q then group using f, R ]      = f D[ Qv | Q ] &gt;&gt;= \ys -&gt;
+                                        case (fmap selQv1 ys, ..., fmap selQvn ys) of
+                                 	     Qv -&gt; D[ e | R ]
+
+D[ e | Q then group by b using f, R ] = f (\Qv -&gt; b) D[ Qv | Q ] &gt;&gt;= \ys -&gt;
+                                        case (fmap selQv1 ys, ..., fmap selQvn ys) of
+                                           Qv -&gt; D[ e | R ]
+
+where  Qv is the tuple of variables bound by Q (and used subsequently)
+       selQvi is a selector mapping Qv to the ith component of Qv
+
+Operator     Standard binding       Expected type
+--------------------------------------------------------------------
+return       GHC.Base               t1 -&gt; m t2
+(&gt;&gt;=)        GHC.Base               m1 t1 -&gt; (t2 -&gt; m2 t3) -&gt; m3 t3
+(&gt;&gt;)         GHC.Base               m1 t1 -&gt; m2 t2         -&gt; m3 t3
+guard        Control.Monad          t1 -&gt; m t2
+fmap         GHC.Base               forall a b. (a-&gt;b) -&gt; n a -&gt; n b
+mzip         Control.Monad.Zip      forall a b. m a -&gt; m b -&gt; m (a,b)
+</pre><p>
+The comprehension should typecheck when its desugaring would typecheck.
+</p><p>
+Monad comprehensions support rebindable syntax (<a class="xref" href="syntax-extns.html#rebindable-syntax" title="7.3.12. Rebindable syntax and the implicit Prelude import">Section 7.3.12, &#8220;Rebindable syntax and the implicit Prelude import&#8221;</a>).
+Without rebindable
+syntax, the operators from the "standard binding" module are used; with
+rebindable syntax, the operators are looked up in the current lexical scope.
+For example, parallel comprehensions will be typechecked and desugared
+using whatever "<code class="literal">mzip</code>" is in scope.
+</p><p>
+The rebindable operators must have the "Expected type" given in the
+table above.  These types are surprisingly general.  For example, you can
+use a bind operator with the type
+</p><pre class="programlisting">
+(&gt;&gt;=) :: T x y a -&gt; (a -&gt; T y z b) -&gt; T x z b
+</pre><p>
+In the case of transform comprehensions, notice that the groups are
+parameterised over some arbitrary type <code class="literal">n</code> (provided it
+has an <code class="literal">fmap</code>, as well as
+the comprehension being over an arbitrary monad.
+</p></div><div class="sect2" title="7.3.12. Rebindable syntax and the implicit Prelude import"><div class="titlepage"><div><div><h3 class="title"><a name="rebindable-syntax"></a>7.3.12. Rebindable syntax and the implicit Prelude import</h3></div></div></div><p><a class="indexterm" name="idp52670192"></a> GHC normally imports
+ <code class="filename">Prelude.hi</code> files for you.  If you'd
+ rather it didn't, then give it a
+ <code class="option">-XNoImplicitPrelude</code> option.  The idea is
+ that you can then import a Prelude of your own.  (But don't
+ call it <code class="literal">Prelude</code>; the Haskell module
+ namespace is flat, and you must not conflict with any
+ Prelude module.)</p><p>Suppose you are importing a Prelude of your own
+	      in order to define your own numeric class
+            hierarchy.  It completely defeats that purpose if the
+            literal "1" means "<code class="literal">Prelude.fromInteger
+            1</code>", which is what the Haskell Report specifies.
+            So the <code class="option">-XRebindableSyntax</code>
+	      flag causes
+            the following pieces of built-in syntax to refer to
+            <span class="emphasis"><em>whatever is in scope</em></span>, not the Prelude
+            versions:
+	    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>An integer literal <code class="literal">368</code> means
+                "<code class="literal">fromInteger (368::Integer)</code>", rather than
+                "<code class="literal">Prelude.fromInteger (368::Integer)</code>".
+</p></li><li class="listitem"><p>Fractional literals are handed in just the same way,
+	  except that the translation is
+	      <code class="literal">fromRational (3.68::Rational)</code>.
+</p></li><li class="listitem"><p>The equality test in an overloaded numeric pattern
+	      uses whatever <code class="literal">(==)</code> is in scope.
+</p></li><li class="listitem"><p>The subtraction operation, and the
+	  greater-than-or-equal test, in <code class="literal">n+k</code> patterns
+	      use whatever <code class="literal">(-)</code> and <code class="literal">(&gt;=)</code> are in scope.
+	      </p></li><li class="listitem"><p>Negation (e.g. "<code class="literal">- (f x)</code>")
+		means "<code class="literal">negate (f x)</code>", both in numeric
+		patterns, and expressions.
+	      </p></li><li class="listitem"><p>Conditionals (e.g. "<code class="literal">if</code> e1 <code class="literal">then</code> e2 <code class="literal">else</code> e3")
+		means "<code class="literal">ifThenElse</code> e1 e2 e3".  However <code class="literal">case</code> expressions are unaffected.
+	      </p></li><li class="listitem"><p>"Do" notation is translated using whatever
+	      functions <code class="literal">(&gt;&gt;=)</code>,
+	      <code class="literal">(&gt;&gt;)</code>, and <code class="literal">fail</code>,
+	      are in scope (not the Prelude
+	      versions).  List comprehensions, mdo (<a class="xref" href="syntax-extns.html#recursive-do-notation" title="7.3.8. The recursive do-notation">Section 7.3.8, &#8220;The recursive do-notation
+&#8221;</a>), and parallel array
+	      comprehensions, are unaffected.  </p></li><li class="listitem"><p>Arrow
+		notation (see <a class="xref" href="arrow-notation.html" title="7.15. Arrow notation">Section 7.15, &#8220;Arrow notation
+&#8221;</a>)
+		uses whatever <code class="literal">arr</code>,
+		<code class="literal">(&gt;&gt;&gt;)</code>, <code class="literal">first</code>,
+		<code class="literal">app</code>, <code class="literal">(|||)</code> and
+		<code class="literal">loop</code> functions are in scope. But unlike the
+		other constructs, the types of these functions must match the
+		Prelude types very closely.  Details are in flux; if you want
+		to use this, ask!
+	      </p></li></ul></div><p>
+<code class="option">-XRebindableSyntax</code> implies <code class="option">-XNoImplicitPrelude</code>.
+</p><p>
+In all cases (apart from arrow notation), the static semantics should be that of the desugared form,
+even if that is a little unexpected. For example, the
+static semantics of the literal <code class="literal">368</code>
+is exactly that of <code class="literal">fromInteger (368::Integer)</code>; it's fine for
+<code class="literal">fromInteger</code> to have any of the types:
+</p><pre class="programlisting">
+fromInteger :: Integer -&gt; Integer
+fromInteger :: forall a. Foo a =&gt; Integer -&gt; a
+fromInteger :: Num a =&gt; a -&gt; Integer
+fromInteger :: Integer -&gt; Bool -&gt; Bool
+</pre><p>
+</p><p>Be warned: this is an experimental facility, with
+	     fewer checks than usual.  Use <code class="literal">-dcore-lint</code>
+	     to typecheck the desugared program.  If Core Lint is happy
+	     you should be all right.</p></div><div class="sect2" title="7.3.13. Postfix operators"><div class="titlepage"><div><div><h3 class="title"><a name="postfix-operators"></a>7.3.13. Postfix operators</h3></div></div></div><p>
+  The <code class="option">-XPostfixOperators</code> flag enables a small
+extension to the syntax of left operator sections, which allows you to
+define postfix operators.  The extension is this: the left section
+</p><pre class="programlisting">
+  (e !)
+</pre><p>
+is equivalent (from the point of view of both type checking and execution) to the expression
+</p><pre class="programlisting">
+  ((!) e)
+</pre><p>
+(for any expression <code class="literal">e</code> and operator <code class="literal">(!)</code>.
+The strict Haskell 98 interpretation is that the section is equivalent to
+</p><pre class="programlisting">
+  (\y -&gt; (!) e y)
+</pre><p>
+That is, the operator must be a function of two arguments.  GHC allows it to
+take only one argument, and that in turn allows you to write the function
+postfix.
+</p><p>The extension does not extend to the left-hand side of function
+definitions; you must define such a function in prefix form.</p></div><div class="sect2" title="7.3.14. Tuple sections"><div class="titlepage"><div><div><h3 class="title"><a name="tuple-sections"></a>7.3.14. Tuple sections</h3></div></div></div><p>
+  The <code class="option">-XTupleSections</code> flag enables Python-style partially applied
+  tuple constructors. For example, the following program
+</p><pre class="programlisting">
+  (, True)
+</pre><p>
+  is considered to be an alternative notation for the more unwieldy alternative
+</p><pre class="programlisting">
+  \x -&gt; (x, True)
+</pre><p>
+You can omit any combination of arguments to the tuple, as in the following
+</p><pre class="programlisting">
+  (, "I", , , "Love", , 1337)
+</pre><p>
+which translates to
+</p><pre class="programlisting">
+  \a b c d -&gt; (a, "I", b, c, "Love", d, 1337)
+</pre><p>
+</p><p>
+  If you have <a class="link" href="primitives.html#unboxed-tuples" title="7.2.2. Unboxed tuples">unboxed tuples</a> enabled, tuple sections
+  will also be available for them, like so
+</p><pre class="programlisting">
+  (# , True #)
+</pre><p>
+Because there is no unboxed unit tuple, the following expression
+</p><pre class="programlisting">
+  (# #)
+</pre><p>
+continues to stand for the unboxed singleton tuple data constructor.
+</p></div><div class="sect2" title="7.3.15. Lambda-case"><div class="titlepage"><div><div><h3 class="title"><a name="lambda-case"></a>7.3.15. Lambda-case</h3></div></div></div><p>
+The <code class="option">-XLambdaCase</code> flag enables expressions of the form
+</p><pre class="programlisting">
+  \case { p1 -&gt; e1; ...; pN -&gt; eN }
+</pre><p>
+which is equivalent to
+</p><pre class="programlisting">
+  \freshName -&gt; case freshName of { p1 -&gt; e1; ...; pN -&gt; eN }
+</pre><p>
+Note that <code class="literal">\case</code> starts a layout, so you can write
+</p><pre class="programlisting">
+  \case
+    p1 -&gt; e1
+    ...
+    pN -&gt; eN
+</pre><p>
+</p></div><div class="sect2" title="7.3.16. Multi-way if-expressions"><div class="titlepage"><div><div><h3 class="title"><a name="multi-way-if"></a>7.3.16. Multi-way if-expressions</h3></div></div></div><p>
+With <code class="option">-XMultiWayIf</code> flag GHC accepts conditional expressions
+with multiple branches:
+</p><pre class="programlisting">
+  if | guard1 -&gt; expr1
+     | ...
+     | guardN -&gt; exprN
+</pre><p>
+which is roughly equivalent to
+</p><pre class="programlisting">
+  case () of
+    _ | guard1 -&gt; expr1
+    ...
+    _ | guardN -&gt; exprN
+</pre><p>
+except that multi-way if-expressions do not alter the layout.
+</p></div><div class="sect2" title="7.3.17. Record field disambiguation"><div class="titlepage"><div><div><h3 class="title"><a name="disambiguate-fields"></a>7.3.17. Record field disambiguation</h3></div></div></div><p>
+In record construction and record pattern matching
+it is entirely unambiguous which field is referred to, even if there are two different
+data types in scope with a common field name.  For example:
+</p><pre class="programlisting">
+module M where
+  data S = MkS { x :: Int, y :: Bool }
+
+module Foo where
+  import M
+
+  data T = MkT { x :: Int }
+
+  ok1 (MkS { x = n }) = n+1   -- Unambiguous
+  ok2 n = MkT { x = n+1 }     -- Unambiguous
+
+  bad1 k = k { x = 3 }  -- Ambiguous
+  bad2 k = x k          -- Ambiguous
+</pre><p>
+Even though there are two <code class="literal">x</code>'s in scope,
+it is clear that the <code class="literal">x</code> in the pattern in the
+definition of <code class="literal">ok1</code> can only mean the field
+<code class="literal">x</code> from type <code class="literal">S</code>. Similarly for
+the function <code class="literal">ok2</code>.  However, in the record update
+in <code class="literal">bad1</code> and the record selection in <code class="literal">bad2</code>
+it is not clear which of the two types is intended.
+</p><p>
+Haskell 98 regards all four as ambiguous, but with the
+<code class="option">-XDisambiguateRecordFields</code> flag, GHC will accept
+the former two.  The rules are precisely the same as those for instance
+declarations in Haskell 98, where the method names on the left-hand side
+of the method bindings in an instance declaration refer unambiguously
+to the method of that class (provided they are in scope at all), even
+if there are other variables in scope with the same name.
+This reduces the clutter of qualified names when you import two
+records from different modules that use the same field name.
+</p><p>
+Some details:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+Field disambiguation can be combined with punning (see <a class="xref" href="syntax-extns.html#record-puns" title="7.3.18. Record puns">Section 7.3.18, &#8220;Record puns
+&#8221;</a>). For example:
+</p><pre class="programlisting">
+module Foo where
+  import M
+  x=True
+  ok3 (MkS { x }) = x+1   -- Uses both disambiguation and punning
+</pre><p>
+</p></li><li class="listitem"><p>
+With <code class="option">-XDisambiguateRecordFields</code> you can use <span class="emphasis"><em>unqualified</em></span>
+field names even if the corresponding selector is only in scope <span class="emphasis"><em>qualified</em></span>
+For example, assuming the same module <code class="literal">M</code> as in our earlier example, this is legal:
+</p><pre class="programlisting">
+module Foo where
+  import qualified M    -- Note qualified
+
+  ok4 (M.MkS { x = n }) = n+1   -- Unambiguous
+</pre><p>
+Since the constructor <code class="literal">MkS</code> is only in scope qualified, you must
+name it <code class="literal">M.MkS</code>, but the field <code class="literal">x</code> does not need
+to be qualified even though <code class="literal">M.x</code> is in scope but <code class="literal">x</code>
+is not.  (In effect, it is qualified by the constructor.)
+</p></li></ul></div><p>
+</p></div><div class="sect2" title="7.3.18. Record puns"><div class="titlepage"><div><div><h3 class="title"><a name="record-puns"></a>7.3.18. Record puns
+</h3></div></div></div><p>
+Record puns are enabled by the flag <code class="literal">-XNamedFieldPuns</code>.
+</p><p>
+When using records, it is common to write a pattern that binds a
+variable with the same name as a record field, such as:
+
+</p><pre class="programlisting">
+data C = C {a :: Int}
+f (C {a = a}) = a
+</pre><p>
+</p><p>
+Record punning permits the variable name to be elided, so one can simply
+write
+
+</p><pre class="programlisting">
+f (C {a}) = a
+</pre><p>
+
+to mean the same pattern as above.  That is, in a record pattern, the
+pattern <code class="literal">a</code> expands into the pattern <code class="literal">a =
+a</code> for the same name <code class="literal">a</code>.
+</p><p>
+Note that:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+Record punning can also be used in an expression, writing, for example,
+</p><pre class="programlisting">
+let a = 1 in C {a}
+</pre><p>
+instead of
+</p><pre class="programlisting">
+let a = 1 in C {a = a}
+</pre><p>
+The expansion is purely syntactic, so the expanded right-hand side
+expression refers to the nearest enclosing variable that is spelled the
+same as the field name.
+</p></li><li class="listitem"><p>
+Puns and other patterns can be mixed in the same record:
+</p><pre class="programlisting">
+data C = C {a :: Int, b :: Int}
+f (C {a, b = 4}) = a
+</pre><p>
+</p></li><li class="listitem"><p>
+Puns can be used wherever record patterns occur (e.g. in
+<code class="literal">let</code> bindings or at the top-level).
+</p></li><li class="listitem"><p>
+A pun on a qualified field name is expanded by stripping off the module qualifier.
+For example:
+</p><pre class="programlisting">
+f (C {M.a}) = a
+</pre><p>
+means
+</p><pre class="programlisting">
+f (M.C {M.a = a}) = a
+</pre><p>
+(This is useful if the field selector <code class="literal">a</code> for constructor <code class="literal">M.C</code>
+is only in scope in qualified form.)
+</p></li></ul></div><p>
+</p></div><div class="sect2" title="7.3.19. Record wildcards"><div class="titlepage"><div><div><h3 class="title"><a name="record-wildcards"></a>7.3.19. Record wildcards
+</h3></div></div></div><p>
+Record wildcards are enabled by the flag <code class="literal">-XRecordWildCards</code>.
+This flag implies <code class="literal">-XDisambiguateRecordFields</code>.
+</p><p>
+For records with many fields, it can be tiresome to write out each field
+individually in a record pattern, as in
+</p><pre class="programlisting">
+data C = C {a :: Int, b :: Int, c :: Int, d :: Int}
+f (C {a = 1, b = b, c = c, d = d}) = b + c + d
+</pre><p>
+</p><p>
+Record wildcard syntax permits a "<code class="literal">..</code>" in a record
+pattern, where each elided field <code class="literal">f</code> is replaced by the
+pattern <code class="literal">f = f</code>.  For example, the above pattern can be
+written as
+</p><pre class="programlisting">
+f (C {a = 1, ..}) = b + c + d
+</pre><p>
+</p><p>
+More details:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+Wildcards can be mixed with other patterns, including puns
+(<a class="xref" href="syntax-extns.html#record-puns" title="7.3.18. Record puns">Section 7.3.18, &#8220;Record puns
+&#8221;</a>); for example, in a pattern <code class="literal">C {a
+= 1, b, ..})</code>.  Additionally, record wildcards can be used
+wherever record patterns occur, including in <code class="literal">let</code>
+bindings and at the top-level.  For example, the top-level binding
+</p><pre class="programlisting">
+C {a = 1, ..} = e
+</pre><p>
+defines <code class="literal">b</code>, <code class="literal">c</code>, and
+<code class="literal">d</code>.
+</p></li><li class="listitem"><p>
+Record wildcards can also be used in expressions, writing, for example,
+</p><pre class="programlisting">
+let {a = 1; b = 2; c = 3; d = 4} in C {..}
+</pre><p>
+in place of
+</p><pre class="programlisting">
+let {a = 1; b = 2; c = 3; d = 4} in C {a=a, b=b, c=c, d=d}
+</pre><p>
+The expansion is purely syntactic, so the record wildcard
+expression refers to the nearest enclosing variables that are spelled
+the same as the omitted field names.
+</p></li><li class="listitem"><p>
+The "<code class="literal">..</code>" expands to the missing
+<span class="emphasis"><em>in-scope</em></span> record fields.
+Specifically the expansion of "<code class="literal">C {..}</code>" includes
+<code class="literal">f</code> if and only if:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>
+<code class="literal">f</code> is a record field of constructor <code class="literal">C</code>.
+</p></li><li class="listitem"><p>
+The record field <code class="literal">f</code> is in scope somehow (either qualified or unqualified).
+</p></li><li class="listitem"><p>
+In the case of expressions (but not patterns),
+the variable <code class="literal">f</code> is in scope unqualified,
+apart from the binding of the record selector itself.
+</p></li></ul></div><p>
+For example
+</p><pre class="programlisting">
+module M where
+  data R = R { a,b,c :: Int }
+module X where
+  import M( R(a,c) )
+  f b = R { .. }
+</pre><p>
+The <code class="literal">R{..}</code> expands to <code class="literal">R{M.a=a}</code>,
+omitting <code class="literal">b</code> since the record field is not in scope,
+and omitting <code class="literal">c</code> since the variable <code class="literal">c</code>
+is not in scope (apart from the binding of the
+record selector <code class="literal">c</code>, of course).
+</p></li></ul></div><p>
+</p></div><div class="sect2" title="7.3.20. Local Fixity Declarations"><div class="titlepage"><div><div><h3 class="title"><a name="local-fixity-declarations"></a>7.3.20. Local Fixity Declarations
+</h3></div></div></div><p>A careful reading of the Haskell 98 Report reveals that fixity
+declarations (<code class="literal">infix</code>, <code class="literal">infixl</code>, and
+<code class="literal">infixr</code>) are permitted to appear inside local bindings
+such those introduced by <code class="literal">let</code> and
+<code class="literal">where</code>.  However, the Haskell Report does not specify
+the semantics of such bindings very precisely.
+</p><p>In GHC, a fixity declaration may accompany a local binding:
+</p><pre class="programlisting">
+let f = ...
+    infixr 3 `f`
+in
+    ...
+</pre><p>
+and the fixity declaration applies wherever the binding is in scope.
+For example, in a <code class="literal">let</code>, it applies in the right-hand
+sides of other <code class="literal">let</code>-bindings and the body of the
+<code class="literal">let</code>C. Or, in recursive <code class="literal">do</code>
+expressions (<a class="xref" href="syntax-extns.html#recursive-do-notation" title="7.3.8. The recursive do-notation">Section 7.3.8, &#8220;The recursive do-notation
+&#8221;</a>), the local fixity
+declarations of a <code class="literal">let</code> statement scope over other
+statements in the group, just as the bound name does.
+</p><p>
+Moreover, a local fixity declaration *must* accompany a local binding of
+that name: it is not possible to revise the fixity of name bound
+elsewhere, as in
+</p><pre class="programlisting">
+let infixr 9 $ in ...
+</pre><p>
+
+Because local fixity declarations are technically Haskell 98, no flag is
+necessary to enable them.
+</p></div><div class="sect2" title="7.3.21. Package-qualified imports"><div class="titlepage"><div><div><h3 class="title"><a name="package-imports"></a>7.3.21. Package-qualified imports</h3></div></div></div><p>With the <code class="option">-XPackageImports</code> flag, GHC allows
+  import declarations to be qualified by the package name that the
+    module is intended to be imported from.  For example:</p><pre class="programlisting">
+import "network" Network.Socket
+</pre><p>would import the module <code class="literal">Network.Socket</code> from
+    the package <code class="literal">network</code> (any version).  This may
+    be used to disambiguate an import when the same module is
+    available from multiple packages, or is present in both the
+    current package being built and an external package.</p><p>The special package name <code class="literal">this</code> can be used to
+    refer to the current package being built.</p><p>Note: you probably don't need to use this feature, it was
+    added mainly so that we can build backwards-compatible versions of
+    packages when APIs change.  It can lead to fragile dependencies in
+    the common case: modules occasionally move from one package to
+    another, rendering any package-qualified imports broken.</p></div><div class="sect2" title="7.3.22. Safe imports"><div class="titlepage"><div><div><h3 class="title"><a name="safe-imports-ext"></a>7.3.22. Safe imports</h3></div></div></div><p>With the <code class="option">-XSafe</code>, <code class="option">-XTrustworthy</code>
+    and <code class="option">-XUnsafe</code> language flags, GHC extends
+    the import declaration syntax to take an optional <code class="literal">safe</code>
+    keyword after the <code class="literal">import</code> keyword. This feature
+    is part of the Safe Haskell GHC extension. For example:</p><pre class="programlisting">
+import safe qualified Network.Socket as NS
+</pre><p>would import the module <code class="literal">Network.Socket</code>
+    with compilation only succeeding if Network.Socket can be
+    safely imported. For a description of when a import is
+    considered safe see <a class="xref" href="safe-haskell.html" title="7.25. Safe Haskell">Section 7.25, &#8220;Safe Haskell&#8221;</a></p></div><div class="sect2" title="7.3.23. Summary of stolen syntax"><div class="titlepage"><div><div><h3 class="title"><a name="syntax-stolen"></a>7.3.23. Summary of stolen syntax</h3></div></div></div><p>Turning on an option that enables special syntax
+    <span class="emphasis"><em>might</em></span> cause working Haskell 98 code to fail
+    to compile, perhaps because it uses a variable name which has
+    become a reserved word.  This section lists the syntax that is
+    "stolen" by language extensions.
+     We use
+    notation and nonterminal names from the Haskell 98 lexical syntax
+    (see the Haskell 98 Report).
+    We only list syntax changes here that might affect
+    existing working programs (i.e. "stolen" syntax).  Many of these
+    extensions will also enable new context-free syntax, but in all
+    cases programs written to use the new syntax would not be
+    compilable without the option enabled.</p><p>There are two classes of special
+    syntax:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>New reserved words and symbols: character sequences
+        which are no longer available for use as identifiers in the
+        program.</p></li><li class="listitem"><p>Other special syntax: sequences of characters that have
+	a different meaning when this particular option is turned
+	on.</p></li></ul></div><p>
+
+The following syntax is stolen:
+
+    </p><div class="variablelist"><dl><dt><span class="term">
+          <code class="literal">forall</code>
+          <a class="indexterm" name="idp52820896"></a>
+	</span></dt><dd><p>
+	Stolen (in types) by: <code class="option">-XExplicitForAll</code>, and hence by
+            <code class="option">-XScopedTypeVariables</code>,
+	    <code class="option">-XLiberalTypeSynonyms</code>,
+	    <code class="option">-XRank2Types</code>,
+	    <code class="option">-XRankNTypes</code>,
+	    <code class="option">-XPolymorphicComponents</code>,
+	    <code class="option">-XExistentialQuantification</code>
+	  </p></dd><dt><span class="term">
+          <code class="literal">mdo</code>
+          <a class="indexterm" name="idp52826960"></a>
+	</span></dt><dd><p>
+	Stolen by: <code class="option">-XRecursiveDo</code>
+	  </p></dd><dt><span class="term">
+          <code class="literal">foreign</code>
+          <a class="indexterm" name="idp52830416"></a>
+	</span></dt><dd><p>
+	Stolen by: <code class="option">-XForeignFunctionInterface</code>
+	  </p></dd><dt><span class="term">
+          <code class="literal">rec</code>,
+	  <code class="literal">proc</code>, <code class="literal">-&lt;</code>,
+	  <code class="literal">&gt;-</code>, <code class="literal">-&lt;&lt;</code>,
+	  <code class="literal">&gt;&gt;-</code>, and <code class="literal">(|</code>,
+	  <code class="literal">|)</code> brackets
+          <a class="indexterm" name="idp52838480"></a>
+	</span></dt><dd><p>
+	Stolen by: <code class="option">-XArrows</code>
+	  </p></dd><dt><span class="term">
+	  <code class="literal">?<em class="replaceable"><code>varid</code></em></code>,
+	  <code class="literal">%<em class="replaceable"><code>varid</code></em></code>
+          <a class="indexterm" name="idp52843120"></a>
+	</span></dt><dd><p>
+	Stolen by: <code class="option">-XImplicitParams</code>
+	  </p></dd><dt><span class="term">
+	  <code class="literal">[|</code>,
+	  <code class="literal">[e|</code>, <code class="literal">[p|</code>,
+	  <code class="literal">[d|</code>, <code class="literal">[t|</code>,
+	  <code class="literal">$(</code>,
+	  <code class="literal">$<em class="replaceable"><code>varid</code></em></code>
+          <a class="indexterm" name="idp52850480"></a>
+	</span></dt><dd><p>
+	Stolen by: <code class="option">-XTemplateHaskell</code>
+	  </p></dd><dt><span class="term">
+	  <code class="literal">[:<em class="replaceable"><code>varid</code></em>|</code>
+          <a class="indexterm" name="idp52854032"></a>
+	</span></dt><dd><p>
+	Stolen by: <code class="option">-XQuasiQuotes</code>
+	  </p></dd><dt><span class="term">
+	      <em class="replaceable"><code>varid</code></em>{<code class="literal">#</code>},
+	      <em class="replaceable"><code>char</code></em><code class="literal">#</code>,
+	      <em class="replaceable"><code>string</code></em><code class="literal">#</code>,
+	      <em class="replaceable"><code>integer</code></em><code class="literal">#</code>,
+	      <em class="replaceable"><code>float</code></em><code class="literal">#</code>,
+	      <em class="replaceable"><code>float</code></em><code class="literal">##</code>,
+	      <code class="literal">(#</code>, <code class="literal">#)</code>
+	</span></dt><dd><p>
+	Stolen by: <code class="option">-XMagicHash</code>
+	  </p></dd></dl></div><p>
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="primitives.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghc-language-features.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="data-type-extensions.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.2. Unboxed types and primitive operations </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 7.4. Extensions to data types and type synonyms</td></tr></table></div></body></html>

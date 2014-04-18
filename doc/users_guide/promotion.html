@@ -1,0 +1,186 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>7.9. Datatype promotion</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghc-language-features.html" title="Chapter 7. GHC Language Features"><link rel="prev" href="kind-polymorphism.html" title="7.8. Kind polymorphism"><link rel="next" href="equality-constraints.html" title="7.10. Equality constraints"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">7.9. Datatype promotion</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="kind-polymorphism.html">Prev</a> </td><th width="60%" align="center">Chapter 7. GHC Language Features</th><td width="20%" align="right"> <a accesskey="n" href="equality-constraints.html">Next</a></td></tr></table><hr></div><div class="sect1" title="7.9. Datatype promotion"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="promotion"></a>7.9. Datatype promotion</h2></div></div></div><p>
+This section describes <span class="emphasis"><em>data type promotion</em></span>, an extension
+to the kind system that complements kind polymorphism.  It is enabled by <code class="option">-XDataKinds</code>,
+and described in more detail in the paper
+<a class="ulink" href="http://dreixel.net/research/pdf/ghp.pdf" target="_top">Giving Haskell a
+Promotion</a>, which appeared at TLDI 2012.
+</p><div class="sect2" title="7.9.1. Motivation"><div class="titlepage"><div><div><h3 class="title"><a name="idp53632864"></a>7.9.1. Motivation</h3></div></div></div><p>
+Standard Haskell has a rich type language. Types classify terms and serve to
+avoid many common programming mistakes. The kind language, however, is
+relatively simple, distinguishing only lifted types (kind <code class="literal">*</code>),
+type constructors (eg. kind <code class="literal">* -&gt; * -&gt; *</code>), and unlifted
+types (<a class="xref" href="primitives.html#glasgow-unboxed" title="7.2.1. Unboxed types">Section 7.2.1, &#8220;Unboxed types&#8221;</a>). In particular when using advanced
+type system features, such as type families (<a class="xref" href="type-families.html" title="7.7. Type families">Section 7.7, &#8220;Type families&#8221;</a>)
+or GADTs (<a class="xref" href="data-type-extensions.html#gadt" title="7.4.7. Generalised Algebraic Data Types (GADTs)">Section 7.4.7, &#8220;Generalised Algebraic Data Types (GADTs)&#8221;</a>), this simple kind system is insufficient,
+and fails to prevent simple errors. Consider the example of type-level natural
+numbers, and length-indexed vectors:
+</p><pre class="programlisting">
+data Ze
+data Su n
+
+data Vec :: * -&gt; * -&gt; * where
+  Nil  :: Vec a Ze
+  Cons :: a -&gt; Vec a n -&gt; Vec a (Su n)
+</pre><p>
+The kind of <code class="literal">Vec</code> is <code class="literal">* -&gt; * -&gt; *</code>. This means
+that eg. <code class="literal">Vec Int Char</code> is a well-kinded type, even though this
+is not what we intend when defining length-indexed vectors.
+</p><p>
+With <code class="option">-XDataKinds</code>, the example above can then be
+rewritten to:
+</p><pre class="programlisting">
+data Nat = Ze | Su Nat
+
+data Vec :: * -&gt; Nat -&gt; * where
+  Nil  :: Vec a Ze
+  Cons :: a -&gt; Vec a n -&gt; Vec a (Su n)
+</pre><p>
+With the improved kind of <code class="literal">Vec</code>, things like
+<code class="literal">Vec Int Char</code> are now ill-kinded, and GHC will report an
+error.
+</p></div><div class="sect2" title="7.9.2. Overview"><div class="titlepage"><div><div><h3 class="title"><a name="idp53643456"></a>7.9.2. Overview</h3></div></div></div><p>
+With <code class="option">-XDataKinds</code>, GHC automatically promotes every suitable
+datatype to be a kind, and its (value) constructors to be type constructors.
+The following types
+</p><pre class="programlisting">
+data Nat = Ze | Su Nat
+
+data List a = Nil | Cons a (List a)
+
+data Pair a b = Pair a b
+ 
+data Sum a b = L a | R b
+</pre><p>
+give rise to the following kinds and type constructors:
+</p><pre class="programlisting">
+Nat :: BOX
+Ze :: Nat
+Su :: Nat -&gt; Nat
+
+List k :: BOX
+Nil  :: List k
+Cons :: k -&gt; List k -&gt; List k
+
+Pair k1 k2 :: BOX
+Pair :: k1 -&gt; k2 -&gt; Pair k1 k2
+
+Sum k1 k2 :: BOX
+L :: k1 -&gt; Sum k1 k2
+R :: k2 -&gt; Sum k1 k2
+</pre><p>
+where <code class="literal">BOX</code> is the (unique) sort that classifies kinds.
+Note that <code class="literal">List</code>, for instance, does not get sort
+<code class="literal">BOX -&gt; BOX</code>, because we do not further classify kinds; all
+kinds have sort <code class="literal">BOX</code>.
+</p><p>
+The following restrictions apply to promotion:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>We only promote datatypes whose kinds are of the form
+ <code class="literal">* -&gt; ... -&gt; * -&gt; *</code>. In particular, we do not promote
+ higher-kinded datatypes such as <code class="literal">data Fix f = In (f (Fix f))</code>,
+ or datatypes whose kinds involve promoted types such as
+ <code class="literal">Vec :: * -&gt; Nat -&gt; *</code>.</p></li><li class="listitem"><p>We do not promote data constructors that are kind
+ polymorphic, involve constraints, mention type or data families, or involve types that
+ are not promotable.
+ </p></li><li class="listitem"><p>We do not promote data family instances (<a class="xref" href="type-families.html#data-families" title="7.7.1. Data families">Section 7.7.1, &#8220;Data families&#8221;</a>).
+ </p></li></ul></div><p>
+</p></div><div class="sect2" title="7.9.3. Distinguishing between types and constructors"><div class="titlepage"><div><div><h3 class="title"><a name="promotion-syntax"></a>7.9.3. Distinguishing between types and constructors</h3></div></div></div><p>
+Since constructors and types share the same namespace, with promotion you can
+get ambiguous type names:
+</p><pre class="programlisting">
+data P          -- 1
+
+data Prom = P   -- 2
+
+type T = P      -- 1 or promoted 2?
+</pre><p>
+In these cases, if you want to refer to the promoted constructor, you should
+prefix its name with a quote:
+</p><pre class="programlisting">
+type T1 = P     -- 1
+
+type T2 = 'P    -- promoted 2
+</pre><p>
+Note that promoted datatypes give rise to named kinds. Since these can never be
+ambiguous, we do not allow quotes in kind names. 
+</p><p>Just as in the case of Template Haskell (<a class="xref" href="template-haskell.html#th-syntax" title="7.14.1. Syntax">Section 7.14.1, &#8220;Syntax&#8221;</a>), there is
+no way to quote a data constructor or type constructor whose second character
+is a single quote.</p></div><div class="sect2" title="7.9.4. Promoted lists and tuples types"><div class="titlepage"><div><div><h3 class="title"><a name="promoted-lists-and-tuples"></a>7.9.4. Promoted lists and tuples types</h3></div></div></div><p>
+Haskell's list and tuple types are natively promoted to kinds, and enjoy the
+same convenient syntax at the type level, albeit prefixed with a quote:
+</p><pre class="programlisting">
+data HList :: [*] -&gt; * where
+  HNil  :: HList '[]
+  HCons :: a -&gt; HList t -&gt; HList (a ': t)
+
+data Tuple :: (*,*) -&gt; * where
+  Tuple :: a -&gt; b -&gt; Tuple '(a,b)
+</pre><p>
+Note that this requires <code class="option">-XTypeOperators</code>.
+</p></div><div class="sect2" title="7.9.5. Promoted Literals"><div class="titlepage"><div><div><h3 class="title"><a name="promoted-literals"></a>7.9.5. Promoted Literals</h3></div></div></div><p>
+Numeric and string literals are promoted to the type level, giving convenient
+access to a large number of predefined type-level constants.  Numeric literals
+are of kind <code class="literal">Nat</code>, while string literals are of kind
+<code class="literal">Symbol</code>.  These kinds are defined in the module
+<code class="literal">GHC.TypeLits</code>.
+</p><p>
+Here is an exampe of using type-level numeric literals to provide a safe
+interface to a low-level function:
+</p><pre class="programlisting">
+import GHC.TypeLits
+import Data.Word
+import Foreign
+
+newtype ArrPtr (n :: Nat) a = ArrPtr (Ptr a)
+
+clearPage :: ArrPtr 4096 Word8 -&gt; IO ()
+clearPage (ArrPtr p) = ...
+</pre><p>
+</p><p>
+Here is an example of using type-level string literals to simulate
+simple record operations:
+</p><pre class="programlisting">
+data Label (l :: Symbol) = Get
+
+class Has a l b | a l -&gt; b where
+  from :: a -&gt; Label l -&gt; b
+
+data Point = Point Int Int deriving Show
+
+instance Has Point "x" Int where from (Point x _) _ = x
+instance Has Point "y" Int where from (Point _ y) _ = y
+
+example = from (Point 1 2) (Get :: Label "x")
+</pre><p>
+</p></div><div class="sect2" title="7.9.6. Promoting existential data constructors"><div class="titlepage"><div><div><h3 class="title"><a name="promotion-existentials"></a>7.9.6. Promoting existential data constructors</h3></div></div></div><p>
+Note that we do promote existential data constructors that are otherwise suitable.
+For example, consider the following:
+</p><pre class="programlisting">
+data Ex :: * where
+  MkEx :: forall a. a -&gt; Ex
+</pre><p>
+Both the type <code class="literal">Ex</code> and the data constructor <code class="literal">MkEx</code>
+get promoted, with the polymorphic kind <code class="literal">'MkEx :: forall k. k -&gt; Ex</code>. 
+Somewhat surprisingly, you can write a type family to extract the member
+of a type-level existential:
+</p><pre class="programlisting">
+type family UnEx (ex :: Ex) :: k
+type instance UnEx (MkEx x) = x
+</pre><p>
+At first blush, <code class="literal">UnEx</code> seems poorly-kinded. The return kind
+<code class="literal">k</code> is not mentioned in the arguments, and thus it would seem
+that an instance would have to return a member of <code class="literal">k</code> 
+<span class="emphasis"><em>for any</em></span> <code class="literal">k</code>. However, this is not the
+case. The type family <code class="literal">UnEx</code> is a kind-indexed type family.
+The return kind <code class="literal">k</code> is an implicit parameter to <code class="literal">UnEx</code>.
+The elaborated definitions are as follows:
+</p><pre class="programlisting">
+type family UnEx (k :: BOX) (ex :: Ex) :: k
+type instance UnEx k (MkEx k x) = x
+</pre><p>
+Thus, the instance triggers only when the implicit parameter to <code class="literal">UnEx</code>
+matches the implicit parameter to <code class="literal">MkEx</code>. Because <code class="literal">k</code>
+is actually a parameter to <code class="literal">UnEx</code>, the kind is not escaping the
+existential, and the above code is valid.
+</p><p>
+See also <a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/7347" target="_top">Trac #7347</a>.
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="kind-polymorphism.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghc-language-features.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="equality-constraints.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.8. Kind polymorphism </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 7.10. Equality constraints</td></tr></table></div></body></html>

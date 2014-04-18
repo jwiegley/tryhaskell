@@ -1,0 +1,371 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>1.5. Release notes for version 7.6.1</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="introduction-GHC.html" title="Chapter 1. Introduction to GHC"><link rel="prev" href="version-numbering.html" title="1.4. GHC version numbering policy"><link rel="next" href="release-7-6-2.html" title="1.6. Release notes for version 7.6.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">1.5. Release notes for version 7.6.1</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="version-numbering.html">Prev</a> </td><th width="60%" align="center">Chapter 1. Introduction to GHC</th><td width="20%" align="right"> <a accesskey="n" href="release-7-6-2.html">Next</a></td></tr></table><hr></div><div class="sect1" title="1.5. Release notes for version 7.6.1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="release-7-6-1"></a>1.5. Release notes for version 7.6.1</h2></div></div></div><p>
+    The significant changes to the various parts of the compiler are
+    listed in the following sections. There have also been numerous bug
+    fixes and performance improvements over the 7.4 branch.
+  </p><div class="sect2" title="1.5.1. Highlights"><div class="titlepage"><div><div><h3 class="title"><a name="idp36952624"></a>1.5.1. Highlights</h3></div></div></div><p>
+        The highlights, since the 7.4 branch, are:
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+          Polymorphic kinds and data promotion are now fully implemented and
+          supported features: <a class="xref" href="kind-polymorphism.html" title="7.8. Kind polymorphism">Section 7.8, &#8220;Kind polymorphism&#8221;</a>.
+        </p></li><li class="listitem"><p>
+          Windows 64bit is now a supported platform.
+        </p></li><li class="listitem"><p>
+          It is now possible to defer type errors until runtime using the
+          <code class="literal">-fdefer-type-errors</code> flag: <a class="xref" href="defer-type-errors.html" title="7.13. Deferring type errors to runtime">Section 7.13, &#8220;Deferring type errors to runtime&#8221;</a>.
+        </p></li><li class="listitem"><p>
+          The RTS now supports changing the number of capabilities at runtime
+          with <code class="literal">Control.Concurrent.setNumCapabilities</code>: <a class="xref" href="using-smp.html#parallel-options" title="4.15.2. RTS options for SMP parallelism">Section 4.15.2, &#8220;RTS options for SMP parallelism&#8221;</a>.
+        </p></li></ul></div></div><div class="sect2" title="1.5.2. Full details"><div class="titlepage"><div><div><h3 class="title"><a name="idp36960320"></a>1.5.2. Full details</h3></div></div></div><div class="sect3" title="1.5.2.1. Language"><div class="titlepage"><div><div><h4 class="title"><a name="idp36960960"></a>1.5.2.1. Language</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+              There is a new extension <code class="literal">ExplicitNamespaces</code>
+              that allows to qualify the export of a type with the
+              <code class="literal">type</code> keyword.
+            </p></li><li class="listitem"><p>
+              The behavior of the <code class="literal">TypeOperator</code> extension has
+              changed: previously, only type operators starting with ":" were
+              considered type constructors, and other operators were treated as
+              type variables. Now type operators are always constructors.
+            </p></li><li class="listitem"><p>
+              It is now possible to explicitly annotate types with kind
+              variables (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/5862" target="_top">#5862</a>).
+              You can now write, for example:
+</p><pre class="programlisting">
+class Category (c :: k -&gt; k -&gt; *) where
+  type Ob c :: k -&gt; Constraint
+  id :: Ob c a =&gt; c a a
+  (.) :: (Ob c a, Ob c b, Ob c c) =&gt; c b c -&gt; c a b -&gt; c a c
+</pre><p>
+              and the variable <code class="literal">k</code>, ranging over kinds, is in scope within the
+              class declaration.
+            </p></li><li class="listitem"><p>
+              It is now possible to derive instances of
+              <code class="literal">Generic1</code> automatically. See <a class="xref" href="generic-programming.html" title="7.22. Generic programming">Section 7.22, &#8220;Generic programming&#8221;</a> for more information.
+            </p></li><li class="listitem"><p>
+              There is a new FFI calling convention <code class="literal">capi</code>,
+              enabled by the <code class="literal">CApiFFI</code> extension. For example,
+              given the following declaration:
+</p><pre class="programlisting">
+foreign import capi "header.h f" f :: CInt -&gt; IO CInt
+</pre><p>
+              GHC will generate code to call <code class="literal">f</code> using the C
+              API defined in the header <code class="literal">header.h</code>. Thus
+              <code class="literal">f</code> can be called even if it may be defined as a
+              CPP <code class="literal">#define</code>, rather than a proper function.
+            </p></li><li class="listitem"><p>
+              There is a new pragma <code class="literal">CTYPE</code>, which can be used
+              to specify the C type that a Haskell type corresponds to, when it
+              is used with the <code class="literal">capi</code> calling convention.
+            </p></li><li class="listitem"><p>
+              Generic default methods are now allowed for multi-parameter type classes.
+            </p></li><li class="listitem"><p>
+              A constructor of a GADT is now considered infix (by a derived
+              <code class="literal">Show</code> instance) if it is a two-argument
+              operator with a fixity declaration (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/5712" target="_top">#5712</a>).
+            </p></li><li class="listitem"><p>
+              There is a new extension <code class="literal">InstanceSigs</code>, which
+              allows type signatures to be specified in instance declarations.
+            </p></li><li class="listitem"><p>
+              GHC now supports numeric and string type literals (enabled by
+              <code class="literal">DataKinds</code>), of kind <code class="literal">Nat</code> and
+              <code class="literal">Symbol</code> respectively (see <a class="xref" href="promotion.html#promoted-literals" title="7.9.5. Promoted Literals">Section 7.9.5, &#8220;Promoted Literals&#8221;</a>).
+            </p></li><li class="listitem"><p>
+              The type <code class="literal">Any</code> can now be used as an argument
+              for <code class="literal">foreign prim</code> functions.
+            </p></li><li class="listitem"><p>
+              The <code class="literal">mdo</code> keyword has been reintroduced. This
+              keyword can be used to create <code class="literal">do</code> expressions
+              with recursive bindings. The behavior of the
+              <code class="literal">rec</code> keyword has been changed, so that it does
+              not perform automatic segmentation in a <code class="literal">do</code>
+              expression anymore.
+            </p></li><li class="listitem"><p>
+              There is a new syntactic construct (enabled by the <code class="literal">LambdaCase</code> extension)
+              for creating an anonymous function out of a <code class="literal">case</code> expression. For example,
+              the following expression:
+</p><pre class="programlisting">
+\case
+    Nothing -&gt; 0
+    Just n  -&gt; n
+</pre><p>
+              is equivalent to:
+</p><pre class="programlisting">
+\x -&gt; case x of
+    Nothing -&gt; 0
+    Just n  -&gt; n
+</pre><p>
+              See <a class="xref" href="syntax-extns.html#lambda-case" title="7.3.15. Lambda-case">Section 7.3.15, &#8220;Lambda-case&#8221;</a> for more details.
+            </p></li><li class="listitem"><p>
+              There is a new syntactic construct (enabled by the
+              <code class="literal">MultiWayIf</code> extension) to create conditional
+              expressions with multiple branches. For example, you can now
+              write:
+</p><pre class="programlisting">
+if | x == 0    -&gt; [...]
+   | x &gt; 1     -&gt; [...]
+   | x &lt; 0     -&gt; [...]
+   | otherwise -&gt; [...]
+</pre><p>
+              See <a class="xref" href="syntax-extns.html#multi-way-if" title="7.3.16. Multi-way if-expressions">Section 7.3.16, &#8220;Multi-way if-expressions&#8221;</a> for more information.
+            </p></li><li class="listitem"><p>
+              Some limitations on the usage of unboxed tuples have been lifted.
+              For example, when the <code class="literal">UnboxedTuples</code> extension
+              is on, an unboxed tuple can now be used as the type of a
+              constructor, function argument, or variable:
+</p><pre class="programlisting">
+data Foo = Foo (# Int, Int #)
+
+f :: (# Int, Int #) -&gt; (# Int, Int #)
+f x = x
+
+g :: (# Int, Int #) -&gt; Int
+g (# a,b #) = a
+
+h x = let y = (# x,x #) in ...
+</pre><p>
+            </p><p>
+              Unboxed tuple can now also be nested:
+</p><pre class="programlisting">
+f :: (# Int, (# Int, Int #), Bool #)
+</pre><p>
+            </p></li></ul></div></div><div class="sect3" title="1.5.2.2. Compiler"><div class="titlepage"><div><div><h4 class="title"><a name="idp37002256"></a>1.5.2.2. Compiler</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+               The <code class="literal">-package</code> flag now correctly loads only
+               the most recent version of a package (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/7030" target="_top">#7030</a>).
+             </p></li><li class="listitem"><p>
+               In <code class="literal">--make</code> mode, GHC now gives an indication
+               of why a module is being recompiled.
+             </p></li><li class="listitem"><p>
+              There is a new flag <code class="literal">-freg-liveness</code> flag to control if
+                STG liveness information is used for optimisation. The flag is
+                enabled by default.
+            </p></li><li class="listitem"><p>
+              Package database flags have been renamed from
+              <code class="literal">-package-conf*</code> to
+              <code class="literal">-package-db*</code>.
+            </p></li><li class="listitem"><p>
+              It is now possible to hide the global package db, and specify the
+              order of the user and global package databases in the stack (see
+              <a class="xref" href="packages.html#package-databases" title="4.9.4. Package Databases">Section 4.9.4, &#8220;Package Databases&#8221;</a>).
+            </p></li></ul></div></div><div class="sect3" title="1.5.2.3. GHCi"><div class="titlepage"><div><div><h4 class="title"><a name="idp37011888"></a>1.5.2.3. GHCi</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                Commands defined later have now precedence in the resolution of
+                abbreviated commands (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/3858" target="_top">#3858</a>).
+              </p></li><li class="listitem"><p>
+                It is now possible to specify a custom pretty-printing function
+                for expressions evaluated at the prompt using the
+                <code class="literal">-interactive-print</code> flag.
+              </p></li><li class="listitem"><p>
+                GHCi now supports loading additional <code class="literal">.ghci</code>
+                files via the <code class="literal">-ghci-script</code> flag (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/5265" target="_top">#5265</a>).
+              </p></li><li class="listitem"><p>
+                A new <code class="literal">:seti</code> command has been introduced,
+                which sets an option that applies only at the prompt.
+              </p></li><li class="listitem"><p>
+                Files are now reloaded after having been edited with the <code class="literal">:edit</code> command.
+              </p></li><li class="listitem"><p>
+                <code class="literal">default</code> declarations can now be entered at the GHCi prompt.
+              </p></li></ul></div></div><div class="sect3" title="1.5.2.4. Template Haskell"><div class="titlepage"><div><div><h4 class="title"><a name="idp37023168"></a>1.5.2.4. Template Haskell</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                Promoted kinds and kind polymorphism are now supported in
+                Template Haskell.
+              </p></li><li class="listitem"><p>
+                It is now possible to create fixity declarations in Template
+                Haskell (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/1541" target="_top">#1541</a>).
+              </p></li><li class="listitem"><p>
+                Primitive byte-array literals can now be created with Template
+                Haskell (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/5877" target="_top">#5877</a>).
+              </p></li></ul></div></div><div class="sect3" title="1.5.2.5. Runtime system"><div class="titlepage"><div><div><h4 class="title"><a name="idp37028192"></a>1.5.2.5. Runtime system</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                The presentation of parallel GC work balance in <code class="literal">+RTS
+                  -s</code> is now expressed as a percentage value (with
+                100% being "perfect") instead of a number from 1 to N, with N
+                being the number of capabilities.
+              </p></li><li class="listitem"><p>
+                The RTS now supports changing the number of capabilities at runtime
+                with <code class="literal">Control.Concurrent.setNumCapabilities</code>: <a class="xref" href="using-smp.html#parallel-options" title="4.15.2. RTS options for SMP parallelism">Section 4.15.2, &#8220;RTS options for SMP parallelism&#8221;</a>.
+              </p></li><li class="listitem"><p>
+                The internal timer is now based on a monotonic clock in both
+                the threaded and non-threaded RTS, on all tier-1 platforms.
+              </p></li></ul></div></div><div class="sect3" title="1.5.2.6. Build system"><div class="titlepage"><div><div><h4 class="title"><a name="idp37033904"></a>1.5.2.6. Build system</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                GHC &gt;= 7.0 is now required for bootstrapping.
+              </p></li><li class="listitem"><p>
+                Windows 64bit is now a supported platform.
+              </p></li></ul></div></div></div><div class="sect2" title="1.5.3. Libraries"><div class="titlepage"><div><div><h3 class="title"><a name="idp37036880"></a>1.5.3. Libraries</h3></div></div></div><p>
+        There have been some changes that have effected multiple
+        libraries:
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                The deprecated function <code class="literal">catch</code> has been
+                removed from <code class="literal">Prelude</code>.
+            </p></li></ul></div><p>
+        The following libraries have been removed from the GHC tree:
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>extensible-exceptions</p></li><li class="listitem"><p>mtl</p></li></ul></div><p>
+        The following libraries have been added to the GHC tree:
+    </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>tranformers (version 0.3.0.0)</p></li></ul></div><div class="sect3" title="1.5.3.1. array"><div class="titlepage"><div><div><h4 class="title"><a name="idp37044368"></a>1.5.3.1. array</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 0.4.0.1 (was 0.4.0.0)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.2. base"><div class="titlepage"><div><div><h4 class="title"><a name="idp37046368"></a>1.5.3.2. base</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                Version number 4.6.0.0 (was 4.5.1.0)
+              </p></li><li class="listitem"><p>
+                The <code class="literal">Text.Read</code> module now exports functions
+</p><pre class="programlisting">
+readEither :: Read a =&gt; String -&gt; Either String a
+readMaybe :: Read a =&gt; String -&gt; Maybe a
+</pre><p>
+              </p></li><li class="listitem"><p>
+                An infix alias for <code class="literal">mappend</code> in <code class="literal">Data.Monoid</code> has been introduced:
+</p><pre class="programlisting">
+(&lt;&gt;) :: Monoid m =&gt; m -&gt; m -&gt; m
+</pre><p>
+
+              </p></li><li class="listitem"><p>
+                The <code class="literal">Bits</code> class does not have a <code class="literal">Num</code> superclass anymore.
+              </p><p>
+                You can make code that works with both
+                Haskell98/Haskell2010 and GHC by:
+                </p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p>
+                      Whenever you make a <code class="literal">Bits</code> instance
+                      of a type, also make <code class="literal">Num</code> instance, and
+                    </p></li><li class="listitem"><p>
+                      Whenever you give a function, instance or class a
+                      <code class="literal">Bits t</code> constraint, also give it
+                      a <code class="literal">Num t</code> constraint.
+                    </p></li></ul></div><p>
+              </p></li><li class="listitem"><p>
+                <code class="literal">Applicative</code> and
+                <code class="literal">Alternative</code> instances for the
+                <code class="literal">ReadP</code> and <code class="literal">ReadPrec</code> monads
+                have been added.
+              </p></li><li class="listitem"><p>
+                <code class="literal">foldl'</code> and <code class="literal">foldr'</code> in
+                <code class="literal">Data.Foldable</code> are now methods of the
+                <code class="literal">Foldable</code> class.
+              </p></li><li class="listitem"><p>
+                The deprecated <code class="literal">Control.OldException</code> module has now been removed.
+              </p></li><li class="listitem"><p>
+                Strict versions of <code class="literal">modifyIORef</code> and <code class="literal">atomicModifyIORef</code> have been added to the <code class="literal">Data.IORef</code> module:
+</p><pre class="programlisting">
+modifyIORef' :: IORef a -&gt; (a -&gt; a) -&gt; IO ()
+atomicModifyIORef' :: IORef a -&gt; (a -&gt; (a,b)) -&gt; IO b
+</pre><p>
+              </p><p>
+                Similarly, a strict version of <code class="literal">modifySTRef</code>
+                has been added to <code class="literal">Data.STRef</code>.
+              </p></li><li class="listitem"><p>
+                A bug in the fingerprint calculation for
+                <code class="literal">TypeRep</code> (<a class="ulink" href="http://hackage.haskell.org/trac/ghc/ticket/5962" target="_top">#5962</a>)
+                has been fixed.
+              </p></li><li class="listitem"><p>
+                A new function <code class="literal">lookupEnv</code> has been added to
+                <code class="literal">System.Environment</code>, which behaves like
+                <code class="literal">getEnv</code>, but returns
+                <code class="literal">Nothing</code> when the environment variable is
+                not defined, instead of throwing an exception.
+              </p></li><li class="listitem"><p>
+                There is a new function <code class="literal">getGCStatsEnabled</code> in
+                <code class="literal">GHC.Stats</code>, which checks whether GC stats
+                have been enabled (for example, via the <code class="literal">-T</code>
+                RTS flag).
+              </p></li><li class="listitem"><p>
+                <code class="literal">QSem</code> in
+                <code class="literal">Control.Concurrent</code> is now deprecated, and
+                will be removed in GHC 7.8. Please use an alternative, e.g. the
+                SafeSemaphore package, instead.
+              </p></li><li class="listitem"><p>
+                A new function <code class="literal">getExecutablePath</code> has been
+                added to <code class="literal">System.Environment</code>. This function
+                returns the full path of the current executable, as opposed to
+                <code class="literal">getProgName</code>, which only returns the base
+                name.
+              </p></li><li class="listitem"><p>
+                The <code class="literal">Data.HashTable</code> module is now deprecated,
+                and will be removed in GHC 7.8. Please use an alternative, e.g.
+                the hashtables package, instead.
+              </p></li><li class="listitem"><p>
+                The <code class="literal">Data.Ord</code> module now exports the
+                <code class="literal">Down</code> <code class="literal">newtype</code>, which
+                reverses the sort order of its argument.
+              </p></li></ul></div></div><div class="sect3" title="1.5.3.3. bin-package-db"><div class="titlepage"><div><div><h4 class="title"><a name="idp37090464"></a>1.5.3.3. bin-package-db</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    This is an internal package, and should not be used.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.4. binary"><div class="titlepage"><div><div><h4 class="title"><a name="idp37092480"></a>1.5.3.4. binary</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 0.5.1.1 (was 0.5.1.0)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.5. bytestring"><div class="titlepage"><div><div><h4 class="title"><a name="idp37094480"></a>1.5.3.5. bytestring</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 0.10.0.0 (was 0.9.2.1)
+                </p></li><li class="listitem"><p>
+                    A new module
+                    <code class="literal">Data.ByteString.Lazy.Builder</code> has been
+                    added.
+                </p><p>
+                    The new module defines a <code class="literal">Builder</code> monoid,
+                    which allows to efficiently construct bytestrings by
+                    concatenation. Possible applications include binary
+                    serialization, targets for efficient pretty-printers, etc.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.6. Cabal"><div class="titlepage"><div><div><h4 class="title"><a name="idp37099232"></a>1.5.3.6. Cabal</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.16.0 (was 1.14.0)
+                </p></li><li class="listitem"><p>
+                    For details of the changes to the Cabal library,
+                    please see the Cabal changelog.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.7. containers"><div class="titlepage"><div><div><h4 class="title"><a name="idp37102144"></a>1.5.3.7. containers</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 0.5.0.0 (was 0.4.2.1)
+                </p></li><li class="listitem"><p>
+                    See <a class="ulink" href="http://www.haskell.org/pipermail/haskell-cafe/2012-May/101082.html" target="_top">the
+                        announcement</a> for details of the changes to the
+                    containers library.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.8. deepseq"><div class="titlepage"><div><div><h4 class="title"><a name="idp37105696"></a>1.5.3.8. deepseq</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.3.0.1 (was 1.3.0.0)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.9. directory"><div class="titlepage"><div><div><h4 class="title"><a name="idp37107696"></a>1.5.3.9. directory</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.2.0.0 (was 1.1.0.2)
+                </p></li><li class="listitem"><p>
+                    The dependency on the old-time package has been changed to time.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.10. filepath"><div class="titlepage"><div><div><h4 class="title"><a name="idp37110576"></a>1.5.3.10. filepath</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.3.0.1 (was 1.3.0.0)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.11. ghc-prim"><div class="titlepage"><div><div><h4 class="title"><a name="idp37112576"></a>1.5.3.11. ghc-prim</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    This is an internal package, and should not be used.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.12. haskell98"><div class="titlepage"><div><div><h4 class="title"><a name="idp37114592"></a>1.5.3.12. haskell98</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 2.0.0.2 (was 2.0.0.1)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.13. haskell2010"><div class="titlepage"><div><div><h4 class="title"><a name="idp37116592"></a>1.5.3.13. haskell2010</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.1.1.0 (was 1.1.0.1)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.14. hoopl"><div class="titlepage"><div><div><h4 class="title"><a name="idp37118592"></a>1.5.3.14. hoopl</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 3.9.0.0 (was 3.8.7.3)
+                </p></li><li class="listitem"><p>
+                    <code class="literal">Compiler.Hoopl.Block</code> now contains the
+                    Block datatype and all the operations on blocks.
+                </p></li><li class="listitem"><p>
+                    <code class="literal">Compiler.Hoopl.Graph</code> now has the
+                    operations on Graphs.
+                </p></li><li class="listitem"><p>
+                    <code class="literal">Compiler.Hoopl.Util</code> and
+                    <code class="literal">Compiler.Hoopl.GraphUtil</code> have been
+                    removed; their contents have been moved to other modules.
+                </p></li><li class="listitem"><p>The Dataflow algorithms have been optimized.</p></li><li class="listitem"><p>Numerous other API changes.</p></li></ul></div></div><div class="sect3" title="1.5.3.15. hpc"><div class="titlepage"><div><div><h4 class="title"><a name="idp37127168"></a>1.5.3.15. hpc</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 0.6.0.0 (was 0.5.1.1)
+                </p></li><li class="listitem"><p>
+                    The dependency on the old-time package has been changed to time.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.16. integer-gmp"><div class="titlepage"><div><div><h4 class="title"><a name="idp37130048"></a>1.5.3.16. integer-gmp</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 0.5.0.0 (was 0.4.0.0)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.17. old-locale"><div class="titlepage"><div><div><h4 class="title"><a name="idp37132048"></a>1.5.3.17. old-locale</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.0.0.5 (was 1.0.0.4)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.18. old-time"><div class="titlepage"><div><div><h4 class="title"><a name="idp37134048"></a>1.5.3.18. old-time</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.1.0.1 (was 1.1.0.0)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.19. process"><div class="titlepage"><div><div><h4 class="title"><a name="idp37136048"></a>1.5.3.19. process</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.1.0.2 (was 1.1.0.1)
+                </p></li><li class="listitem"><p>
+                    Asynchronous exception bugs in
+                    <code class="literal">readProcess</code> and
+                    <code class="literal">readProcessWithExitCode</code> have been fixed.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.20. template-haskell"><div class="titlepage"><div><div><h4 class="title"><a name="idp37140112"></a>1.5.3.20. template-haskell</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 2.8.0.0 (was 2.7.0.0)
+                </p></li><li class="listitem"><p>
+                    Promoted kinds and kind polymorphism are now supported in Template Haskell.
+                </p></li><li class="listitem"><p>
+                    Fixity declarations have been added to Template Haskell.
+                </p></li><li class="listitem"><p>
+                    The <code class="literal">StringPrimL</code> constructor for
+                    <code class="literal">Lit</code> now takes a <code class="literal">Word8</code>
+                    array, instead of a <code class="literal">String</code>.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.21. time"><div class="titlepage"><div><div><h4 class="title"><a name="idp37147072"></a>1.5.3.21. time</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 1.4.1 (was 1.4)
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.22. unix"><div class="titlepage"><div><div><h4 class="title"><a name="idp37149072"></a>1.5.3.22. unix</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 2.6.0.0 (was 2.5.1.1)
+                </p></li><li class="listitem"><p>
+                    Bindings for <code class="literal">mkdtemp</code> and <code class="literal">mkstemps</code> have been added.
+                </p></li><li class="listitem"><p>
+                    New functions <code class="literal">setEnvironment</code> and <code class="literal">cleanEnv</code> have been added.
+                </p></li><li class="listitem"><p>
+                    Bindings for functions to access high resolution timestamps have been added.
+                </p></li></ul></div></div><div class="sect3" title="1.5.3.23. Win32"><div class="titlepage"><div><div><h4 class="title"><a name="idp37155936"></a>1.5.3.23. Win32</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+                    Version number 2.3.0.0 (was 2.2.2.0)
+                </p></li></ul></div></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="version-numbering.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction-GHC.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="release-7-6-2.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">1.4. GHC version numbering policy </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 1.6. Release notes for version 7.6.2</td></tr></table></div></body></html>

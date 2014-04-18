@@ -1,0 +1,25 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>7.23. Control over monomorphism</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghc-language-features.html" title="Chapter 7. GHC Language Features"><link rel="prev" href="generic-programming.html" title="7.22. Generic programming"><link rel="next" href="lang-parallel.html" title="7.24. Concurrent and Parallel Haskell"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">7.23. Control over monomorphism</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="generic-programming.html">Prev</a> </td><th width="60%" align="center">Chapter 7. GHC Language Features</th><td width="20%" align="right"> <a accesskey="n" href="lang-parallel.html">Next</a></td></tr></table><hr></div><div class="sect1" title="7.23. Control over monomorphism"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="monomorphism"></a>7.23. Control over monomorphism</h2></div></div></div><p>GHC supports two flags that control the way in which generalisation is
+carried out at let and where bindings.
+</p><div class="sect2" title="7.23.1. Switching off the dreaded Monomorphism Restriction"><div class="titlepage"><div><div><h3 class="title"><a name="idp54812608"></a>7.23.1. Switching off the dreaded Monomorphism Restriction</h3></div></div></div><a class="indexterm" name="idp54813312"></a><p>Haskell's monomorphism restriction (see
+<a class="ulink" href="http://www.haskell.org/onlinereport/decls.html#sect4.5.5" target="_top">Section
+4.5.5</a>
+of the Haskell Report)
+can be completely switched off by
+<code class="option">-XNoMonomorphismRestriction</code>.
+</p></div><div class="sect2" title="7.23.2. Monomorphic pattern bindings"><div class="titlepage"><div><div><h3 class="title"><a name="idp54815936"></a>7.23.2. Monomorphic pattern bindings</h3></div></div></div><a class="indexterm" name="idp54816608"></a><a class="indexterm" name="idp54817520"></a><p> As an experimental change, we are exploring the possibility of
+	  making pattern bindings monomorphic; that is, not generalised at all.
+	    A pattern binding is a binding whose LHS has no function arguments,
+	    and is not a simple variable.  For example:
+</p><pre class="programlisting">
+  f x = x                    -- Not a pattern binding
+  f = \x -&gt; x                -- Not a pattern binding
+  f :: Int -&gt; Int = \x -&gt; x  -- Not a pattern binding
+
+  (g,h) = e                  -- A pattern binding
+  (f) = e                    -- A pattern binding
+  [x] = e                    -- A pattern binding
+</pre><p>
+Experimentally, GHC now makes pattern bindings monomorphic <span class="emphasis"><em>by
+default</em></span>.  Use <code class="option">-XNoMonoPatBinds</code> to recover the
+standard behaviour.
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="generic-programming.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghc-language-features.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="lang-parallel.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.22. Generic programming </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 7.24. Concurrent and Parallel Haskell</td></tr></table></div></body></html>

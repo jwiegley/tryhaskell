@@ -1,0 +1,51 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>2.6. Invoking GHCi</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghci.html" title="Chapter 2. Using GHCi"><link rel="prev" href="ghci-debugger.html" title="2.5. The GHCi Debugger"><link rel="next" href="ghci-commands.html" title="2.7. GHCi commands"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">2.6. Invoking GHCi</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ghci-debugger.html">Prev</a> </td><th width="60%" align="center">Chapter 2. Using GHCi</th><td width="20%" align="right"> <a accesskey="n" href="ghci-commands.html">Next</a></td></tr></table><hr></div><div class="sect1" title="2.6. Invoking GHCi"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="ghci-invocation"></a>2.6. Invoking GHCi</h2></div></div></div><a class="indexterm" name="idp38298400"></a><a class="indexterm" name="idp38299392"></a><p>GHCi is invoked with the command <code class="literal">ghci</code> or
+    <code class="literal">ghc &#8211;&#8211;interactive</code>.  One or more modules or
+    filenames can also be specified on the command line; this
+    instructs GHCi to load the specified modules or filenames (and all
+    the modules they depend on), just as if you had said
+    <code class="literal">:load <em class="replaceable"><code>modules</code></em></code> at the
+    GHCi prompt (see <a class="xref" href="ghci-commands.html" title="2.7. GHCi commands">Section 2.7, &#8220;GHCi commands&#8221;</a>).  For example, to
+    start GHCi and load the program whose topmost module is in the
+    file <code class="literal">Main.hs</code>, we could say:</p><pre class="screen">
+$ ghci Main.hs
+</pre><p>Most of the command-line options accepted by GHC (see <a class="xref" href="using-ghc.html" title="Chapter 4. Using GHC">Chapter 4, <i>Using GHC</i></a>) also make sense in interactive mode.  The ones
+    that don't make sense are mostly obvious.</p><div class="sect2" title="2.6.1. Packages"><div class="titlepage"><div><div><h3 class="title"><a name="idp38305712"></a>2.6.1. Packages</h3></div></div></div><a class="indexterm" name="idp38306352"></a><p>Most packages (see <a class="xref" href="packages.html#using-packages" title="4.9.1. Using Packages">Section 4.9.1, &#8220;Using Packages
+  &#8221;</a>) are
+      available without needing to specify any extra flags at all:
+      they will be automatically loaded the first time they are
+      needed.</p><p>For hidden packages, however, you need to request the
+      package be loaded by using the <code class="literal">-package</code> flag:</p><pre class="screen">
+$ ghci -package readline
+GHCi, version 6.8.1: http://www.haskell.org/ghc/  :? for help
+Loading package base ... linking ... done.
+Loading package readline-1.0 ... linking ... done.
+Prelude&gt;
+</pre><p>The following command works to load new packages into a
+      running GHCi:</p><pre class="screen">
+Prelude&gt; :set -package <em class="replaceable"><code>name</code></em>
+</pre><p>But note that doing this will cause all currently loaded
+      modules to be unloaded, and you'll be dumped back into the
+      <code class="literal">Prelude</code>.</p></div><div class="sect2" title="2.6.2. Extra libraries"><div class="titlepage"><div><div><h3 class="title"><a name="idp38312976"></a>2.6.2. Extra libraries</h3></div></div></div><a class="indexterm" name="idp38313616"></a><p>Extra libraries may be specified on the command line using
+      the normal <code class="literal">-l<em class="replaceable"><code>lib</code></em></code>
+      option.  (The term <span class="emphasis"><em>library</em></span> here refers to
+      libraries of foreign object code; for using libraries of Haskell
+      source code, see <a class="xref" href="loading-source-files.html#ghci-modules-filenames" title="2.2.1. Modules vs. filenames">Section 2.2.1, &#8220;Modules vs. filenames&#8221;</a>.) For
+      example, to load the &#8220;m&#8221; library:</p><pre class="screen">
+$ ghci -lm
+</pre><p>On systems with <code class="literal">.so</code>-style shared
+      libraries, the actual library loaded will the
+      <code class="filename">lib<em class="replaceable"><code>lib</code></em>.so</code>.  GHCi
+      searches the following places for libraries, in this order:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Paths specified using the
+          <code class="literal">-L<em class="replaceable"><code>path</code></em></code>
+          command-line option,</p></li><li class="listitem"><p>the standard library search path for your system,
+	  which on some systems may be overridden by setting the
+	  <code class="literal">LD_LIBRARY_PATH</code> environment
+	  variable.</p></li></ul></div><p>On systems with <code class="literal">.dll</code>-style shared
+      libraries, the actual library loaded will be
+      <code class="filename"><em class="replaceable"><code>lib</code></em>.dll</code>.  Again,
+      GHCi will signal an error if it can't find the library.</p><p>GHCi can also load plain object files
+      (<code class="literal">.o</code> or <code class="literal">.obj</code> depending on
+      your platform) from the command-line.  Just add the name the
+      object file to the command line.</p><p>Ordering of <code class="option">-l</code> options matters: a library
+      should be mentioned <span class="emphasis"><em>before</em></span> the libraries it
+      depends on (see <a class="xref" href="options-phases.html#options-linker" title="4.12.6. Options affecting linking">Section 4.12.6, &#8220;Options affecting linking&#8221;</a>).</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ghci-debugger.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghci.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ghci-commands.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">2.5. The GHCi Debugger </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 2.7. GHCi commands</td></tr></table></div></body></html>

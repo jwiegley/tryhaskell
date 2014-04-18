@@ -1,0 +1,24 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>4.16. Platform-specific Flags</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="using-ghc.html" title="Chapter 4. Using GHC"><link rel="prev" href="using-smp.html" title="4.15. Using SMP parallelism"><link rel="next" href="runtime-control.html" title="4.17. Running a compiled program"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">4.16. Platform-specific Flags</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="using-smp.html">Prev</a> </td><th width="60%" align="center">Chapter 4. Using GHC</th><td width="20%" align="right"> <a accesskey="n" href="runtime-control.html">Next</a></td></tr></table><hr></div><div class="sect1" title="4.16. Platform-specific Flags"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="options-platform"></a>4.16. Platform-specific Flags</h2></div></div></div><a class="indexterm" name="idp43471392"></a><a class="indexterm" name="idp43472160"></a><a class="indexterm" name="idp43472944"></a><p>Some flags only make sense for particular target
+    platforms.</p><div class="variablelist"><dl><dt><span class="term"><code class="option">-msse2</code>:</span></dt><dd><p>
+                                (x86 only, added in GHC 7.0.1) Use the SSE2 registers and
+                                instruction set to implement floating point operations when using
+                                the <a class="link" href="code-generators.html#native-code-gen" title="4.11.1. Native code Generator (-fasm)">native code generator</a>.
+                                This gives a substantial performance improvement for floating
+                                point, but the resulting compiled code
+                                will only run on processors that support SSE2 (Intel Pentium 4 and
+                                later, or AMD Athlon 64 and later). The
+                                <a class="link" href="code-generators.html#llvm-code-gen" title="4.11.2. LLVM Code Generator (-fllvm)">LLVM backend</a> will also use SSE2
+                                if your processor supports it but detects this automatically so no
+                                flag is required.
+          </p><p>
+            SSE2 is unconditionally used on x86-64 platforms.
+          </p></dd><dt><span class="term"><code class="option">-msse4.2</code>:</span></dt><dd><p>
+                                (x86 only, added in GHC 7.4.1) Use the SSE4.2 instruction set to
+                                implement some floating point and bit operations when using the
+                                <a class="link" href="code-generators.html#native-code-gen" title="4.11.1. Native code Generator (-fasm)">native code generator</a>. The
+                                resulting compiled code will only run on processors that
+                                support SSE4.2 (Intel Core i7 and later). The
+                                <a class="link" href="code-generators.html#llvm-code-gen" title="4.11.2. LLVM Code Generator (-fllvm)">LLVM backend</a> will also use
+                                SSE4.2 if your processor supports it but detects this automatically
+                                so no flag is required.
+          </p></dd></dl></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="using-smp.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="using-ghc.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="runtime-control.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">4.15. Using SMP parallelism </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 4.17. Running a compiled program</td></tr></table></div></body></html>

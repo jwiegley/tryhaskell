@@ -1,0 +1,117 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>7.24. Concurrent and Parallel Haskell</title><link rel="stylesheet" type="text/css" href="fptools.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"><link rel="home" href="index.html" title="The Glorious Glasgow Haskell Compilation System User's Guide, Version 7.6.3"><link rel="up" href="ghc-language-features.html" title="Chapter 7. GHC Language Features"><link rel="prev" href="monomorphism.html" title="7.23. Control over monomorphism"><link rel="next" href="safe-haskell.html" title="7.25. Safe Haskell"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">7.24. Concurrent and Parallel Haskell</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="monomorphism.html">Prev</a> </td><th width="60%" align="center">Chapter 7. GHC Language Features</th><td width="20%" align="right"> <a accesskey="n" href="safe-haskell.html">Next</a></td></tr></table><hr></div><div class="sect1" title="7.24. Concurrent and Parallel Haskell"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="lang-parallel"></a>7.24. Concurrent and Parallel Haskell</h2></div></div></div><a class="indexterm" name="idp57394704"></a><p>GHC implements some major extensions to Haskell to support
+  concurrent and parallel programming.  Let us first establish terminology:
+  </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>Parallelism</em></span> means running
+	  a Haskell program on multiple processors, with the goal of improving
+	  performance.  Ideally, this should be done invisibly, and with no
+	  semantic changes.
+	    </p></li><li class="listitem"><p><span class="emphasis"><em>Concurrency</em></span> means implementing
+	  a program by using multiple I/O-performing threads.  While a
+	  concurrent Haskell program <span class="emphasis"><em>can</em></span> run on a
+	  parallel machine, the primary goal of using concurrency is not to gain
+	  performance, but rather because that is the simplest and most
+	  direct way to write the program.  Since the threads perform I/O,
+	  the semantics of the program is necessarily non-deterministic.
+	    </p></li></ul></div><p>
+  GHC supports both concurrency and parallelism.
+  </p><div class="sect2" title="7.24.1. Concurrent Haskell"><div class="titlepage"><div><div><h3 class="title"><a name="concurrent-haskell"></a>7.24.1. Concurrent Haskell</h3></div></div></div><p>Concurrent Haskell is the name given to GHC's concurrency extension.
+  It is enabled by default, so no special flags are required.
+   The <a class="ulink" href="http://research.microsoft.com/copyright/accept.asp?path=/users/simonpj/papers/concurrent-haskell.ps.gz" target="_top">
+	      Concurrent Haskell paper</a> is still an excellent
+	      resource, as is <a class="ulink" href="http://research.microsoft.com/%7Esimonpj/papers/marktoberdorf/" target="_top">Tackling
+	      the awkward squad</a>.
+  </p><p>
+  To the programmer, Concurrent Haskell introduces no new language constructs;
+  rather, it appears simply as a library, <a class="ulink" href="../libraries/base-4.6.0.1/Control-Concurrent.html" target="_top">
+	      Control.Concurrent</a>.  The functions exported by this
+	      library include:
+  </p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Forking and killing threads.</p></li><li class="listitem"><p>Sleeping.</p></li><li class="listitem"><p>Synchronised mutable variables, called <code class="literal">MVars</code></p></li><li class="listitem"><p>Support for bound threads; see the paper <a class="ulink" href="http://research.microsoft.com/%7Esimonpj/Papers/conc-ffi/index.htm" target="_top">Extending
+the FFI with concurrency</a>.</p></li></ul></div><p>
+</p></div><div class="sect2" title="7.24.2. Software Transactional Memory"><div class="titlepage"><div><div><h3 class="title"><a name="idp57407520"></a>7.24.2. Software Transactional Memory</h3></div></div></div><p>GHC now supports a new way to coordinate the activities of Concurrent
+    Haskell threads, called Software Transactional Memory (STM).  The
+    <a class="ulink" href="http://research.microsoft.com/%7Esimonpj/papers/stm/index.htm" target="_top">STM
+    papers</a> are an excellent introduction to what STM is, and how to use
+    it.</p><p>The main library you need to use is the <a class="ulink" href="http://hackage.haskell.org/package/stm" target="_top">
+	      stm library</a>. The main features supported are these:
+</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>Atomic blocks.</p></li><li class="listitem"><p>Transactional variables.</p></li><li class="listitem"><p>Operations for composing transactions:
+<code class="literal">retry</code>, and <code class="literal">orElse</code>.</p></li><li class="listitem"><p>Data invariants.</p></li></ul></div><p>
+All these features are described in the papers mentioned earlier.
+</p></div><div class="sect2" title="7.24.3. Parallel Haskell"><div class="titlepage"><div><div><h3 class="title"><a name="idp57414608"></a>7.24.3. Parallel Haskell</h3></div></div></div><p>GHC includes support for running Haskell programs in parallel
+  on symmetric, shared-memory multi-processor
+      (SMP)<a class="indexterm" name="idp57415536"></a>.
+  By default GHC runs your program on one processor; if you
+     want it to run in parallel you must link your program
+      with the <code class="option">-threaded</code>, and run it with the RTS
+      <code class="option">-N</code> option; see  <a class="xref" href="using-smp.html" title="4.15. Using SMP parallelism">Section 4.15, &#8220;Using SMP parallelism&#8221;</a>).
+      The runtime will
+      schedule the running Haskell threads among the available OS
+      threads, running as many in parallel as you specified with the
+      <code class="option">-N</code> RTS option.</p><p>GHC only supports parallelism on a shared-memory multiprocessor.
+    Glasgow Parallel Haskell<a class="indexterm" name="idp57418832"></a>
+    (GPH) supports running Parallel Haskell
+    programs on both clusters of machines, and single multiprocessors.  GPH is
+    developed and distributed
+    separately from GHC (see <a class="ulink" href="http://www.cee.hw.ac.uk/~dsg/gph/" target="_top">The
+      GPH Page</a>).  However, the current version of GPH is based on a much older
+    version of GHC (4.06).</p></div><div class="sect2" title="7.24.4. Annotating pure code for parallelism"><div class="titlepage"><div><div><h3 class="title"><a name="idp57420832"></a>7.24.4. Annotating pure code for parallelism</h3></div></div></div><p>Ordinary single-threaded Haskell programs will not benefit from
+    enabling SMP parallelism alone: you must expose parallelism to the
+    compiler.
+
+    One way to do so is forking threads using Concurrent Haskell (<a class="xref" href="lang-parallel.html#concurrent-haskell" title="7.24.1. Concurrent Haskell">Section 7.24.1, &#8220;Concurrent Haskell&#8221;</a>), but the simplest mechanism for extracting parallelism from pure code is
+      to use the <code class="literal">par</code> combinator, which is closely related to (and often used
+      with) <code class="literal">seq</code>.  Both of these are available from the <a class="ulink" href="http://hackage.haskell.org/package/parallel" target="_top">parallel library</a>:</p><pre class="programlisting">
+infixr 0 `par`
+infixr 1 `pseq`
+
+par  :: a -&gt; b -&gt; b
+pseq :: a -&gt; b -&gt; b</pre><p>The expression <code class="literal">(x `par` y)</code>
+      <span class="emphasis"><em>sparks</em></span> the evaluation of <code class="literal">x</code>
+      (to weak head normal form) and returns <code class="literal">y</code>.  Sparks are
+      queued for execution in FIFO order, but are not executed immediately.  If
+      the runtime detects that there is an idle CPU, then it may convert a
+      spark into a real thread, and run the new thread on the idle CPU.  In
+      this way the available parallelism is spread amongst the real
+      CPUs.</p><p>For example, consider the following parallel version of our old
+      nemesis, <code class="function">nfib</code>:</p><pre class="programlisting">
+import Control.Parallel
+
+nfib :: Int -&gt; Int
+nfib n | n &lt;= 1 = 1
+       | otherwise = par n1 (pseq n2 (n1 + n2 + 1))
+                     where n1 = nfib (n-1)
+                           n2 = nfib (n-2)</pre><p>For values of <code class="varname">n</code> greater than 1, we use
+      <code class="function">par</code> to spark a thread to evaluate <code class="literal">nfib (n-1)</code>,
+      and then we use <code class="function">pseq</code> to force the
+      parent thread to evaluate <code class="literal">nfib (n-2)</code> before going on
+      to add together these two subexpressions.  In this divide-and-conquer
+      approach, we only spark a new thread for one branch of the computation
+      (leaving the parent to evaluate the other branch).  Also, we must use
+      <code class="function">pseq</code> to ensure that the parent will evaluate
+      <code class="varname">n2</code> <span class="emphasis"><em>before</em></span> <code class="varname">n1</code>
+      in the expression <code class="literal">(n1 + n2 + 1)</code>.  It is not sufficient
+      to reorder the expression as <code class="literal">(n2 + n1 + 1)</code>, because
+      the compiler may not generate code to evaluate the addends from left to
+      right.</p><p>
+      Note that we use <code class="literal">pseq</code> rather
+      than <code class="literal">seq</code>.  The two are almost equivalent, but
+      differ in their runtime behaviour in a subtle
+      way: <code class="literal">seq</code> can evaluate its arguments in either
+      order, but <code class="literal">pseq</code> is required to evaluate its
+      first argument before its second, which makes it more suitable
+      for controlling the evaluation order in conjunction
+      with <code class="literal">par</code>.
+    </p><p>When using <code class="literal">par</code>, the general rule of thumb is that
+      the sparked computation should be required at a later time, but not too
+      soon.  Also, the sparked computation should not be too small, otherwise
+      the cost of forking it in parallel will be too large relative to the
+      amount of parallelism gained.  Getting these factors right is tricky in
+      practice.</p><p>It is possible to glean a little information about how
+      well <code class="literal">par</code> is working from the runtime
+      statistics; see <a class="xref" href="runtime-control.html#rts-options-gc" title="4.17.3. RTS options to control the garbage collector">Section 4.17.3, &#8220;RTS options to control the garbage collector&#8221;</a>.</p><p>More sophisticated combinators for expressing parallelism are
+      available from the <code class="literal">Control.Parallel.Strategies</code>
+      module in the <a class="ulink" href="http://hackage.haskell.org/package/parallel" target="_top">parallel package</a>.
+      This module builds functionality around <code class="literal">par</code>,
+      expressing more elaborate patterns of parallel computation, such as
+      parallel <code class="literal">map</code>.</p></div><div class="sect2" title="7.24.5. Data Parallel Haskell"><div class="titlepage"><div><div><h3 class="title"><a name="idp57448592"></a>7.24.5. Data Parallel Haskell</h3></div></div></div><p>GHC includes experimental support for Data Parallel Haskell (DPH). This code
+        is highly unstable and is only provided as a technology preview. More
+        information can be found on the corresponding <a class="ulink" href="http://www.haskell.org/haskellwiki/GHC/Data_Parallel_Haskell" target="_top">DPH
+        wiki page</a>.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="monomorphism.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ghc-language-features.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="safe-haskell.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">7.23. Control over monomorphism </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 7.25. Safe Haskell</td></tr></table></div></body></html>
