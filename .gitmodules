@@ -4,3 +4,6 @@
 [submodule "haskell-platform"]
 	path = haskell-platform
 	url = git://github.com/haskell/haskell-platform.git
+[submodule "stackage-deps"]
+	path = stackage-deps
+	url = git://github.com/jwiegley/stackage-deps.git
