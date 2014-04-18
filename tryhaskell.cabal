@@ -1,0 +1,32 @@
+Name: tryhaskell
+
+Version:  0.0.1
+Synopsis: Process for building the Try Haskell! app bundle.
+
+Description: Process for building the Try Haskell! app bundle.
+
+Homepage:           https://github.com/jwiegley/tryhaskell
+License:            BSD3
+License-file:       LICENSE
+Author:             John Wiegley
+Maintainer:         John Wiegley <johnw@newartisans.com>
+Category:           Development
+Build-type:         Simple
+Cabal-version:      >= 1.8
+
+Extra-Source-Files: README.md
+
+Executable tryhaskell
+    Main-is: Build.hs
+    Ghc-options: -threaded
+
+    Build-depends: base >= 4 && < 5
+                 , parallel-io
+                 , shake
+                 , directory
+                 , filepath
+                 , text
+
+Source-repository head
+  type:     git
+  location: https://github.com/jwiegley/tryhaskell
