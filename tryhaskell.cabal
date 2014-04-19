@@ -26,6 +26,7 @@ Executable tryhaskell
                  , directory
                  , filepath
                  , text
+                 , temporary
 
 Source-repository head
   type:     git

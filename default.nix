@@ -1,4 +1,4 @@
-{ cabal, parallelIo, shake, filepath, text
+{ cabal, parallelIo, shake, filepath, text, temporary
 }:
 
 cabal.mkDerivation (self: {
@@ -7,7 +7,7 @@ cabal.mkDerivation (self: {
   src = ./.;
   isLibrary = false;
   isExecutable = true;
-  buildDepends = [ parallelIo shake filepath text ];
+  buildDepends = [ parallelIo shake filepath text temporary ];
   meta = {
     homepage = "https://github.com/jwiegley/tryhaskell";
     description = "Process for building the Try Haskell! app bundle";
