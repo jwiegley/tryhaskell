@@ -42,12 +42,12 @@ main = shakeArgs shakeOptions {- shakeVerbosity = Chatty -} $ do
         need [ appRoot, ghcTarball' ]
         tmpDir <- liftIO getTemporaryDirectory
         path <- liftIO $ createTempDirectory tmpDir "ghc"
-        () <- cmd "tar xjCf" [ path, ghcTarball' ]
-        let distro = path </> ghcVer
-        () <- cmd (Cwd distro) (EchoStdout True)
-            "sh configure" [ "--prefix=" ++ ghcRoot ]
-        () <- cmd (Cwd distro) "make install"
-        liftIO $ removeDirectoryRecursive path
+        flip actionFinally (removeDirectoryRecursive path) $ do
+            () <- cmd "tar xjCf" [ path, ghcTarball' ]
+            let distro = path </> ghcVer
+            () <- cmd (Cwd distro) (EchoStdout True)
+                "sh configure" [ "--prefix=" ++ ghcRoot ]
+            cmd (Cwd distro) "make install"
 
     target *> \out -> do
         need [ "image" ]
